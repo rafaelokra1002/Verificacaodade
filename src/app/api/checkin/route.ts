@@ -59,11 +59,12 @@ export async function POST(request: NextRequest) {
     const ip = getClientIP(request);
     const userAgent = getUserAgent(request);
 
+    const lat = parseFloat(String(latitude));
+    const lng = parseFloat(String(longitude));
+
     // Geocodificação reversa
     let endereco: string | null = null;
     try {
-      const lat = parseFloat(String(latitude));
-      const lng = parseFloat(String(longitude));
       const geoRes = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
         { headers: { 'User-Agent': 'ControleParental/1.0' } }
@@ -92,9 +93,6 @@ export async function POST(request: NextRequest) {
     } catch (geoErr) {
       console.error('Erro na geocodificação reversa:', geoErr);
     }
-
-    const lat = parseFloat(String(latitude));
-    const lng = parseFloat(String(longitude));
 
     // Verificar cercas virtuais
     const alertasFora: { cercaNome: string }[] = [];
@@ -210,6 +208,8 @@ export async function GET(request: NextRequest) {
     return successResponse({
       valid: validacao.valid,
       reason: validacao.reason,
+      videoTipo: tokenRecord.videoTipo || 'youtube_funny',
+      redirectUrl: tokenRecord.redirectUrl || null,
       filho: validacao.valid ? {
         nome: tokenRecord.filho.nome,
       } : undefined,

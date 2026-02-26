@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { filhoId } = body;
+    const { filhoId, videoTipo, redirectUrl } = body;
 
     if (!filhoId) {
       return errorResponse('ID do filho é obrigatório', 400);
@@ -51,6 +51,8 @@ export async function POST(request: NextRequest) {
         filhoId,
         token,
         expiracao,
+        videoTipo: videoTipo || 'youtube_funny',
+        redirectUrl: redirectUrl || null,
       },
     });
 

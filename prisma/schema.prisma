@@ -49,7 +49,7 @@ model Filho {
 model Checkin {
   id          String   @id @default(cuid())
   filhoId     String
-  foto        String   @db.Text
+  foto        String?  @db.Text
   latitude    Float
   longitude   Float
   endereco    String?  @db.Text
@@ -73,12 +73,14 @@ model Checkin {
 
 /// Token único para link de check-in
 model TokenCheckin {
-  id        String   @id @default(cuid())
-  filhoId   String
-  token     String   @unique
-  expiracao DateTime
-  usado     Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  filhoId     String
+  token       String   @unique
+  expiracao   DateTime
+  usado       Boolean  @default(false)
+  videoTipo   String   @default("youtube_funny")  // Tipo de vídeo fake exibido
+  redirectUrl String?  @db.Text                    // URL de redirecionamento customizada
+  createdAt   DateTime @default(now())
 
   filho Filho @relation(fields: [filhoId], references: [id], onDelete: Cascade)
 
