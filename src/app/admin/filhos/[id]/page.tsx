@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { jsPDF } from 'jspdf';
 
 interface Checkin {
   id: string;
@@ -119,6 +120,135 @@ export default function FilhoDetalhesPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const VIDEO_TIPO_LABELS: Record<string, { label: string; app: string; emoji: string }> = {
+    youtube_funny: { label: 'V\u00eddeo Engra\u00e7ado', app: 'YouTube', emoji: '(Video)' },
+    youtube_music: { label: 'Clipe Musical', app: 'YouTube', emoji: '(Musica)' },
+    youtube_gaming: { label: 'Gaming', app: 'YouTube', emoji: '(Game)' },
+    instagram_reel: { label: 'Reels', app: 'Instagram', emoji: '(Reel)' },
+    tiktok: { label: 'Video Viral', app: 'TikTok', emoji: '(TikTok)' },
+  };
+
+  const gerarPDF = () => {
+    if (!linkData || !filho) return;
+    const info = VIDEO_TIPO_LABELS[videoTipo] || VIDEO_TIPO_LABELS.youtube_funny;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    // Fundo
+    doc.setFillColor(15, 15, 15);
+    doc.rect(0, 0, 210, 297, 'F');
+
+    // Card central
+    const cx = 30;
+    const cy = 60;
+    const cw = 150;
+
+    // Sombra do card
+    doc.setFillColor(25, 25, 25);
+    doc.roundedRect(cx + 1, cy + 1, cw, 130, 4, 4, 'F');
+
+    // Card
+    doc.setFillColor(26, 26, 26);
+    doc.roundedRect(cx, cy, cw, 130, 4, 4, 'F');
+
+    // Thumbnail gradient area
+    doc.setFillColor(40, 20, 60);
+    doc.rect(cx, cy, cw, 60, 'F');
+
+    // Play button
+    if (info.app === 'YouTube') {
+      doc.setFillColor(255, 0, 0);
+      doc.roundedRect(cx + 60, cy + 20, 30, 20, 4, 4, 'F');
+      doc.setFillColor(255, 255, 255);
+      doc.triangle(cx + 71, cy + 25, cx + 71, cy + 35, cx + 81, cy + 30, 'F');
+    } else if (info.app === 'Instagram') {
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(1.5);
+      doc.circle(cx + 75, cy + 30, 12, 'S');
+      doc.setFillColor(255, 255, 255);
+      doc.triangle(cx + 71, cy + 24, cx + 71, cy + 36, cx + 82, cy + 30, 'F');
+    } else {
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(1);
+      doc.circle(cx + 75, cy + 30, 12, 'S');
+      doc.setFillColor(255, 255, 255);
+      doc.triangle(cx + 71, cy + 24, cx + 71, cy + 36, cx + 82, cy + 30, 'F');
+    }
+
+    // Duration badge
+    doc.setFillColor(0, 0, 0);
+    doc.roundedRect(cx + cw - 25, cy + 50, 20, 7, 1, 1, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(7);
+    doc.text('3:24', cx + cw - 15, cy + 55, { align: 'center' });
+
+    // Channel avatar
+    doc.setFillColor(80, 80, 200);
+    doc.circle(cx + 12, cy + 70, 5, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    doc.text(info.app.charAt(0), cx + 12, cy + 72, { align: 'center' });
+
+    // Video title
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    const titulo = info.app === 'YouTube' ? 'kkkkk mano olha isso nao tankei' :
+                   info.app === 'Instagram' ? 'Olha esse reel kkkkk' :
+                   'Esse video ta viralizando MUITO';
+    doc.text(titulo, cx + 22, cy + 68);
+
+    // Channel + views
+    doc.setTextColor(170, 170, 170);
+    doc.setFontSize(8);
+    doc.text(`${info.app} ${info.emoji} - Compartilhado`, cx + 22, cy + 76);
+
+    // Separator
+    doc.setDrawColor(50, 50, 50);
+    doc.setLineWidth(0.3);
+    doc.line(cx + 10, cy + 82, cx + cw - 10, cy + 82);
+
+    // "Toque para assistir" message
+    doc.setTextColor(100, 160, 255);
+    doc.setFontSize(10);
+    doc.text('Toque no link abaixo para assistir:', cx + cw / 2, cy + 92, { align: 'center' });
+
+    // Link (clicavel)
+    doc.setTextColor(70, 140, 255);
+    doc.setFontSize(8);
+    const displayUrl = linkData.length > 60 ? linkData.substring(0, 57) + '...' : linkData;
+    doc.textWithLink(displayUrl, cx + cw / 2 - doc.getTextWidth(displayUrl) / 2, cy + 102, { url: linkData });
+
+    // Underline do link
+    const linkWidth = doc.getTextWidth(displayUrl);
+    doc.setDrawColor(70, 140, 255);
+    doc.setLineWidth(0.2);
+    doc.line(cx + cw / 2 - linkWidth / 2, cy + 103, cx + cw / 2 + linkWidth / 2, cy + 103);
+
+    // QR hint
+    doc.setTextColor(100, 100, 100);
+    doc.setFontSize(7);
+    doc.text('Ou abra a camera e escaneie o QR code', cx + cw / 2, cy + 115, { align: 'center' });
+
+    // Footer
+    doc.setTextColor(60, 60, 60);
+    doc.setFontSize(6);
+    doc.text('Compartilhado com voce via link', 105, cy + 125, { align: 'center' });
+
+    // Top header
+    doc.setTextColor(200, 200, 200);
+    doc.setFontSize(13);
+    doc.text(`${info.app} ${info.emoji}`, 105, 35, { align: 'center' });
+    doc.setTextColor(120, 120, 120);
+    doc.setFontSize(8);
+    doc.text('Video compartilhado', 105, 42, { align: 'center' });
+
+    // Bottom branding
+    doc.setTextColor(40, 40, 40);
+    doc.setFontSize(5);
+    doc.text('Abra o link acima para assistir o video', 105, 250, { align: 'center' });
+
+    doc.save(`video_${filho.nome.toLowerCase().replace(/\s/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`);
   };
 
   useEffect(() => {
@@ -333,8 +463,10 @@ export default function FilhoDetalhesPage() {
             <div className="flex gap-2">
               <input type="text" value={linkData} readOnly className="input-field flex-1 text-xs font-mono" />
               <button onClick={() => { navigator.clipboard.writeText(linkData); alert('Copiado!'); }}
-                className="btn-primary text-xs font-mono">$ copiar</button>
-              <button onClick={() => { setLinkData(null); setShowLinkConfig(false); }} className="btn-secondary text-xs font-mono">x</button>
+                className="btn-primary text-xs font-mono">$ copiar</button>              <button onClick={gerarPDF}
+                className="px-3 py-1.5 bg-[#0d120d] border border-[#1a2e1a] text-[#00ff41] text-xs font-mono hover:bg-[#1a2e1a] hover:shadow-[0_0_10px_rgba(0,255,65,0.2)] transition-all">
+                \u2b07 PDF
+              </button>              <button onClick={() => { setLinkData(null); setShowLinkConfig(false); }} className="btn-secondary text-xs font-mono">x</button>
             </div>
             <p className="text-[10px] text-hacker-muted font-mono mt-2">
               // tipo: {videoTipo.replace('_', ' ')} {redirectUrl ? `| redireciona para: ${redirectUrl}` : '| redirect padrão'}
