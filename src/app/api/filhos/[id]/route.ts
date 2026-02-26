@@ -1,7 +1,7 @@
-// API de Cliente individual
-// GET /api/clientes/[id] - Detalhes do cliente
-// PUT /api/clientes/[id] - Atualizar cliente
-// DELETE /api/clientes/[id] - Remover cliente
+// API de Filho individual
+// GET /api/filhos/[id] - Detalhes do filho
+// PUT /api/filhos/[id] - Atualizar filho
+// DELETE /api/filhos/[id] - Remover filho
 
 export const dynamic = 'force-dynamic';
 
@@ -23,25 +23,40 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
 
-    const cliente = await prisma.cliente.findUnique({
-      where: { id },
+    const filho = await prisma.filho.findUnique({
+      where: { id, responsavelId: admin.userId },
       include: {
-        verificacoes: {
+        checkins: {
           orderBy: { createdAt: 'desc' },
         },
         tokens: {
           orderBy: { createdAt: 'desc' },
         },
+        cercas: {
+          orderBy: { createdAt: 'desc' },
+        },
+        horarios: {
+          orderBy: { diaSemana: 'asc' },
+        },
+        alertas: {
+          orderBy: { createdAt: 'desc' },
+          take: 50,
+          include: {
+            checkin: {
+              select: { latitude: true, longitude: true, endereco: true },
+            },
+          },
+        },
       },
     });
 
-    if (!cliente) {
-      return errorResponse('Cliente não encontrado', 404);
+    if (!filho) {
+      return errorResponse('Filho(a) não encontrado(a)', 404);
     }
 
-    return successResponse({ cliente });
+    return successResponse({ filho });
   } catch (error) {
-    console.error('Erro ao buscar cliente:', error);
+    console.error('Erro ao buscar filho:', error);
     return errorResponse('Erro interno do servidor', 500);
   }
 }
@@ -55,19 +70,21 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
     const body = await request.json();
-    const { nome, telefone } = body;
+    const { nome, idade, dispositivo, ativo } = body;
 
-    const cliente = await prisma.cliente.update({
-      where: { id },
+    const filho = await prisma.filho.update({
+      where: { id, responsavelId: admin.userId },
       data: {
         ...(nome && { nome }),
-        ...(telefone && { telefone }),
+        ...(idade !== undefined && { idade: idade ? parseInt(idade, 10) : null }),
+        ...(dispositivo !== undefined && { dispositivo }),
+        ...(ativo !== undefined && { ativo }),
       },
     });
 
-    return successResponse({ cliente });
+    return successResponse({ filho });
   } catch (error) {
-    console.error('Erro ao atualizar cliente:', error);
+    console.error('Erro ao atualizar filho:', error);
     return errorResponse('Erro interno do servidor', 500);
   }
 }
@@ -81,20 +98,19 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
 
-    await prisma.cliente.delete({ where: { id } });
+    await prisma.filho.delete({ where: { id, responsavelId: admin.userId } });
 
-    // Registrar log
     await prisma.logAcesso.create({
       data: {
-        acao: 'REMOVER_CLIENTE',
-        detalhes: `Admin removeu cliente ID: ${id}`,
+        acao: 'REMOVER_FILHO',
+        detalhes: `Removeu filho(a) ID: ${id}`,
         userId: admin.userId,
       },
     });
 
-    return successResponse({ message: 'Cliente removido com sucesso' });
+    return successResponse({ message: 'Filho(a) removido(a) com sucesso' });
   } catch (error) {
-    console.error('Erro ao remover cliente:', error);
+    console.error('Erro ao remover filho:', error);
     return errorResponse('Erro interno do servidor', 500);
   }
 }

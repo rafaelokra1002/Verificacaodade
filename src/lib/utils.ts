@@ -1,10 +1,10 @@
-// Funções utilitárias gerais do sistema
+// Funções utilitárias gerais do sistema - Controle Parental
 
 import { v4 as uuidv4 } from 'uuid';
 import { NextRequest } from 'next/server';
 
-/** Gerar token único para link de verificação */
-export function generateVerificationToken(): string {
+/** Gerar token único para link de check-in */
+export function generateCheckinToken(): string {
   return uuidv4();
 }
 
@@ -55,17 +55,14 @@ export function getTokenExpiration(): Date {
 }
 
 /** Processar imagem base64 para armazenamento */
-export async function saveBase64Image(base64Data: string, _clienteId: string): Promise<string> {
-  // Em produção (Vercel), o filesystem é read-only, então armazenamos como base64 no banco
-  // Garantir que o prefixo data URI esteja presente
+export async function saveBase64Image(base64Data: string, _filhoId: string): Promise<string> {
   if (base64Data.startsWith('data:image/')) {
     return base64Data;
   }
-  // Se veio sem prefixo, adicionar
   return `data:image/jpeg;base64,${base64Data}`;
 }
 
-/** Verificar se um token de verificação é válido */
+/** Verificar se um token de check-in é válido */
 export function isTokenValid(expiracao: Date, usado: boolean): { valid: boolean; reason?: string } {
   if (usado) {
     return { valid: false, reason: 'Este link já foi utilizado.' };
@@ -76,6 +73,42 @@ export function isTokenValid(expiracao: Date, usado: boolean): { valid: boolean;
   }
 
   return { valid: true };
+}
+
+/**
+ * Calcular distância entre dois pontos geográficos (fórmula Haversine)
+ * Retorna distância em metros
+ */
+export function calcularDistancia(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000; // Raio da Terra em metros
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/** Verificar se coordenadas estão dentro de uma cerca virtual */
+export function dentroDoPerimetro(
+  lat: number, lng: number,
+  cercaLat: number, cercaLng: number, raio: number
+): boolean {
+  const distancia = calcularDistancia(lat, lng, cercaLat, cercaLng);
+  return distancia <= raio;
+}
+
+/** Mapear dia da semana para enum */
+export function getDiaSemanaAtual(): string {
+  const dias = ['DOMINGO', 'SEGUNDA', 'TERCA', 'QUARTA', 'QUINTA', 'SEXTA', 'SABADO'];
+  return dias[new Date().getDay()];
+}
+
+/** Formatar hora atual HH:mm */
+export function getHoraAtual(): string {
+  return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
 /** Resposta padronizada de erro */

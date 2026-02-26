@@ -1,7 +1,6 @@
-// API de Autenticação do Administrador
-// POST /api/auth/login - Login
-// POST /api/auth/logout - Logout
-// GET /api/auth/me - Verificar sessão
+// API de Autenticação do Responsável
+// POST /api/auth - Login / Logout
+// GET /api/auth - Verificar sessão
 
 export const dynamic = 'force-dynamic';
 
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest) {
     await prisma.logAcesso.create({
       data: {
         acao: 'LOGIN',
-        detalhes: `Admin ${user.email} fez login`,
+        detalhes: `Responsável ${user.nome} fez login`,
         ip: getClientIP(request),
         userAgent: getUserAgent(request),
         userId: user.id,

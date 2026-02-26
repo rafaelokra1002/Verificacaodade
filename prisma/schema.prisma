@@ -1,5 +1,5 @@
-// Prisma Schema - Sistema de Verificação de Identidade
-// Modelos para gerenciar administradores, clientes e verificações
+// Prisma Schema - Sistema de Controle Parental
+// Modelos para gerenciar responsáveis, filhos, check-ins, cercas e horários
 
 generator client {
   provider = "prisma-client-js"
@@ -10,7 +10,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// Administrador do sistema
+/// Responsável (pai/mãe) do sistema
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -19,59 +19,128 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  filhos Filho[]
+
   @@map("users")
 }
 
-/// Status possíveis do cliente
-enum StatusCliente {
-  PENDENTE
-  VERIFICADO
+/// Filho(a) monitorado(a)
+model Filho {
+  id            String   @id @default(cuid())
+  nome          String
+  idade         Int?
+  dispositivo   String?
+  responsavelId String
+  ativo         Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  responsavel User             @relation(fields: [responsavelId], references: [id], onDelete: Cascade)
+  checkins    Checkin[]
+  tokens      TokenCheckin[]
+  cercas      CercaVirtual[]
+  horarios    HorarioProgramado[]
+  alertas     Alerta[]
+
+  @@map("filhos")
 }
 
-/// Cliente que precisa ser verificado
-model Cliente {
-  id        String        @id @default(cuid())
-  nome      String
-  telefone  String
-  status    StatusCliente @default(PENDENTE)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-
-  verificacoes Verificacao[]
-  tokens       TokenVerificacao[]
-
-  @@map("clientes")
-}
-
-/// Dados da verificação realizada pelo cliente
-model Verificacao {
+/// Check-in de localização realizado pelo filho
+model Checkin {
   id        String   @id @default(cuid())
-  clienteId String
-  foto      String   @db.Text // Base64 da foto
+  filhoId   String
+  foto      String   @db.Text
   latitude  Float
   longitude Float
-  endereco  String?  @db.Text // Endereço obtido por geocodificação reversa
+  endereco  String?  @db.Text
   ip        String
   userAgent String
   createdAt DateTime @default(now())
 
-  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  filho   Filho    @relation(fields: [filhoId], references: [id], onDelete: Cascade)
+  alertas Alerta[]
 
-  @@map("verificacoes")
+  @@map("checkins")
 }
 
-/// Token único para link de verificação
-model TokenVerificacao {
+/// Token único para link de check-in
+model TokenCheckin {
   id        String   @id @default(cuid())
-  clienteId String
+  filhoId   String
   token     String   @unique
   expiracao DateTime
   usado     Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  filho Filho @relation(fields: [filhoId], references: [id], onDelete: Cascade)
 
-  @@map("tokens_verificacao")
+  @@map("tokens_checkin")
+}
+
+/// Cerca virtual (geofence)
+model CercaVirtual {
+  id        String   @id @default(cuid())
+  filhoId   String
+  nome      String
+  latitude  Float
+  longitude Float
+  raio      Float    // raio em metros
+  ativa     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  filho Filho @relation(fields: [filhoId], references: [id], onDelete: Cascade)
+
+  @@map("cercas_virtuais")
+}
+
+/// Dias da semana
+enum DiaSemana {
+  SEGUNDA
+  TERCA
+  QUARTA
+  QUINTA
+  SEXTA
+  SABADO
+  DOMINGO
+}
+
+/// Horário programado para check-in
+model HorarioProgramado {
+  id        String    @id @default(cuid())
+  filhoId   String
+  diaSemana DiaSemana
+  horario   String    // formato "HH:mm"
+  ativo     Boolean   @default(true)
+  createdAt DateTime  @default(now())
+
+  filho Filho @relation(fields: [filhoId], references: [id], onDelete: Cascade)
+
+  @@map("horarios_programados")
+}
+
+/// Tipos de alerta
+enum TipoAlerta {
+  CHECKIN_REALIZADO
+  FORA_CERCA
+  CHECKIN_ATRASADO
+  NOVO_DISPOSITIVO
+}
+
+/// Alerta gerado pelo sistema
+model Alerta {
+  id        String     @id @default(cuid())
+  filhoId   String
+  tipo      TipoAlerta
+  mensagem  String
+  lido      Boolean    @default(false)
+  checkinId String?
+  createdAt DateTime   @default(now())
+
+  filho   Filho    @relation(fields: [filhoId], references: [id], onDelete: Cascade)
+  checkin Checkin? @relation(fields: [checkinId], references: [id], onDelete: SetNull)
+
+  @@map("alertas")
 }
 
 /// Log de acesso ao sistema

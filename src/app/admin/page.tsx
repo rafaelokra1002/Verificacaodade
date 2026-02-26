@@ -1,32 +1,58 @@
 'use client';
 
-// Dashboard principal do admin
-// Exibe resumo com estatísticas e lista recente de clientes
+// Dashboard principal - TEMA HACKER
+// Terminal-style dashboard com visual matrix
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 interface DashboardStats {
-  totalClientes: number;
-  pendentes: number;
-  verificados: number;
+  totalFilhos: number;
+  ativos: number;
+  alertasNaoLidos: number;
+  totalCheckins: number;
 }
 
-interface ClienteResumo {
+interface FilhoResumo {
   id: string;
   nome: string;
-  telefone: string;
-  status: 'PENDENTE' | 'VERIFICADO';
+  idade: number | null;
+  dispositivo: string | null;
+  ativo: boolean;
   createdAt: string;
-  verificacoes: Array<{
+  checkins: Array<{
     id: string;
+    createdAt: string;
+    endereco: string | null;
+    latitude: number;
+    longitude: number;
+  }>;
+  _count: {
+    checkins: number;
+    alertas: number;
+    cercas: number;
+  };
+  alertas: Array<{
+    id: string;
+    tipo: string;
+    mensagem: string;
     createdAt: string;
   }>;
 }
 
+interface AlertaResumo {
+  id: string;
+  tipo: string;
+  mensagem: string;
+  lido: boolean;
+  createdAt: string;
+  filho: { nome: string };
+}
+
 export default function AdminDashboardPage() {
-  const [stats, setStats] = useState<DashboardStats>({ totalClientes: 0, pendentes: 0, verificados: 0 });
-  const [clientes, setClientes] = useState<ClienteResumo[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({ totalFilhos: 0, ativos: 0, alertasNaoLidos: 0, totalCheckins: 0 });
+  const [filhos, setFilhos] = useState<FilhoResumo[]>([]);
+  const [alertas, setAlertas] = useState<AlertaResumo[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,17 +61,25 @@ export default function AdminDashboardPage() {
 
   const fetchData = async () => {
     try {
-      const response = await fetch('/api/clientes');
-      const data = await response.json();
+      const [filhosRes, alertasRes] = await Promise.all([
+        fetch('/api/filhos'),
+        fetch('/api/alertas?limit=10&naoLidos=true'),
+      ]);
+      const filhosData = await filhosRes.json();
+      const alertasData = await alertasRes.json();
 
-      if (response.ok) {
-        const lista = data.clientes as ClienteResumo[];
-        setClientes(lista);
+      if (filhosRes.ok) {
+        const lista = filhosData.filhos as FilhoResumo[];
+        setFilhos(lista);
         setStats({
-          totalClientes: lista.length,
-          pendentes: lista.filter((c) => c.status === 'PENDENTE').length,
-          verificados: lista.filter((c) => c.status === 'VERIFICADO').length,
+          totalFilhos: lista.length,
+          ativos: lista.filter((f) => f.ativo).length,
+          alertasNaoLidos: alertasData.totalNaoLidos || 0,
+          totalCheckins: lista.reduce((acc, f) => acc + f._count.checkins, 0),
         });
+      }
+      if (alertasRes.ok) {
+        setAlertas(alertasData.alertas || []);
       }
     } catch (err) {
       console.error('Erro ao carregar dados:', err);
@@ -61,14 +95,31 @@ export default function AdminDashboardPage() {
     }).format(new Date(dateStr));
   };
 
+  const getAlertaIcon = (tipo: string) => {
+    switch (tipo) {
+      case 'FORA_CERCA': return '[!!!]';
+      case 'CHECKIN_REALIZADO': return '[OK]';
+      case 'CHECKIN_ATRASADO': return '[LATE]';
+      case 'NOVO_DISPOSITIVO': return '[DEV]';
+      default: return '[>>]';
+    }
+  };
+
+  const getAlertaColor = (tipo: string) => {
+    switch (tipo) {
+      case 'FORA_CERCA': return 'border-red-800/50 bg-red-900/10';
+      case 'CHECKIN_ATRASADO': return 'border-yellow-800/50 bg-yellow-900/10';
+      default: return 'border-hacker-border bg-hacker-surface';
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <svg className="w-8 h-8 animate-spin text-primary-600" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-        </svg>
+        <div className="text-center">
+          <div className="text-hacker-glow text-2xl animate-flicker mb-3 font-mono">&#9608;</div>
+          <p className="text-hacker-dim text-sm font-mono">Carregando dados...</p>
+        </div>
       </div>
     );
   }
@@ -78,127 +129,143 @@ export default function AdminDashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Visão geral do sistema</p>
+          <h1 className="text-xl font-bold text-hacker-glow text-glow font-mono">
+            {'>'} dashboard
+          </h1>
+          <p className="text-hacker-dim text-xs mt-1 font-mono">// visão geral do sistema</p>
         </div>
-        <Link href="/admin/clientes" className="btn-primary text-sm">
-          Gerenciar Clientes
+        <Link href="/admin/filhos" className="btn-primary text-xs font-mono">
+          + novo_alvo
         </Link>
       </div>
 
-      {/* Cards de estatísticas */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Total */}
-        <div className="card flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
-            <svg className="w-6 h-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
+      {/* Cards de estatísticas - Terminal style */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'ALVOS', value: stats.totalFilhos, prefix: 'targets:', color: 'text-hacker-glow' },
+          { label: 'ONLINE', value: stats.ativos, prefix: 'active:', color: 'text-hacker-glow' },
+          { label: 'CHECKINS', value: stats.totalCheckins, prefix: 'pings:', color: 'text-cyan-400' },
+          { label: 'ALERTAS', value: stats.alertasNaoLidos, prefix: 'warnings:', color: stats.alertasNaoLidos > 0 ? 'text-red-400' : 'text-hacker-dim' },
+        ].map((stat) => (
+          <div key={stat.label} className="card border-hacker-border hover:border-hacker-glow/30 transition-all">
+            <div className="text-[10px] text-hacker-muted uppercase tracking-wider mb-1">
+              {'>'} {stat.label}
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-xs text-hacker-dim">{stat.prefix}</span>
+              <span className={`text-2xl font-bold ${stat.color} font-mono`}>{stat.value}</span>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Total de Clientes</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalClientes}</p>
-          </div>
-        </div>
-
-        {/* Pendentes */}
-        <div className="card flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
-            <svg className="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Pendentes</p>
-            <p className="text-2xl font-bold text-yellow-600">{stats.pendentes}</p>
-          </div>
-        </div>
-
-        {/* Verificados */}
-        <div className="card flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-            <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Verificados</p>
-            <p className="text-2xl font-bold text-green-600">{stats.verificados}</p>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Lista recente de clientes */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Clientes Recentes</h2>
-          <Link href="/admin/clientes" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
-            Ver todos →
-          </Link>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Filhos / Targets */}
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-bold text-hacker-glow font-mono">
+              <span className="text-hacker-dim">$</span> ls ~/targets
+            </h2>
+            <Link href="/admin/filhos" className="text-xs text-hacker-dim hover:text-hacker-glow font-mono transition-colors">
+              ver_todos →
+            </Link>
+          </div>
+
+          {filhos.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-hacker-dim text-sm font-mono">
+                <p className="mb-2">$ ls ~/targets</p>
+                <p className="text-hacker-muted">nenhum alvo encontrado</p>
+              </div>
+              <Link href="/admin/filhos" className="text-hacker-glow text-xs mt-3 inline-block font-mono hover:underline">
+                $ add --target →
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filhos.slice(0, 5).map((filho) => (
+                <Link key={filho.id} href={`/admin/filhos/${filho.id}`}
+                  className="flex items-center justify-between p-3 rounded border border-hacker-border
+                           hover:border-hacker-glow/30 hover:bg-hacker-glow/5 transition-all group">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded border flex items-center justify-center text-xs font-bold font-mono
+                      ${filho.ativo
+                        ? 'border-hacker-glow/30 bg-hacker-glow/5 text-hacker-glow'
+                        : 'border-red-800/30 bg-red-900/5 text-red-400'}`}>
+                      {filho.nome.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm text-hacker-glow font-mono group-hover:text-glow">{filho.nome}</p>
+                      <p className="text-[10px] text-hacker-dim font-mono">
+                        {filho.idade ? `age:${filho.idade}` : ''}
+                        {filho.idade && filho.dispositivo ? ' | ' : ''}
+                        {filho.dispositivo ? `dev:${filho.dispositivo}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    {filho.checkins[0] ? (
+                      <div className="font-mono">
+                        <p className="text-[10px] text-hacker-dim">last_ping:</p>
+                        <p className="text-[10px] text-hacker-glow">{formatDate(filho.checkins[0].createdAt)}</p>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-hacker-muted font-mono">no_data</span>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
-        {clientes.length === 0 ? (
-          <div className="text-center py-8">
-            <svg className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
-                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-            <p className="text-gray-500 dark:text-gray-400">Nenhum cliente cadastrado</p>
+        {/* Alertas Recentes */}
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-bold text-hacker-glow font-mono">
+              <span className="text-hacker-dim">$</span> tail ~/alerts
+              {stats.alertasNaoLidos > 0 && (
+                <span className="ml-2 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold
+                               text-red-400 bg-red-900/30 border border-red-800/50 rounded font-mono">
+                  {stats.alertasNaoLidos}
+                </span>
+              )}
+            </h2>
+            <Link href="/admin/alertas" className="text-xs text-hacker-dim hover:text-hacker-glow font-mono transition-colors">
+              ver_todos →
+            </Link>
           </div>
-        ) : (
-          <div className="overflow-x-auto -mx-6">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-zinc-800">
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Nome
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Telefone
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Criado em
-                  </th>
-                  <th className="px-6 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
-                {clientes.slice(0, 10).map((cliente) => (
-                  <tr key={cliente.id} className="hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors">
-                    <td className="px-6 py-3.5 text-sm font-medium text-gray-900 dark:text-white">
-                      {cliente.nome}
-                    </td>
-                    <td className="px-6 py-3.5 text-sm text-gray-500 dark:text-gray-400">
-                      {cliente.telefone}
-                    </td>
-                    <td className="px-6 py-3.5">
-                      <span className={cliente.status === 'VERIFICADO' ? 'badge-verificado' : 'badge-pendente'}>
-                        {cliente.status === 'VERIFICADO' ? '✓ Verificado' : '⏳ Pendente'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3.5 text-sm text-gray-500 dark:text-gray-400">
-                      {formatDate(cliente.createdAt)}
-                    </td>
-                    <td className="px-6 py-3.5 text-right">
-                      <Link
-                        href={`/admin/clientes/${cliente.id}`}
-                        className="text-primary-600 hover:text-primary-700 text-sm font-medium"
-                      >
-                        Detalhes
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+
+          {alertas.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-hacker-dim text-sm font-mono">
+                <p className="mb-2">$ tail ~/alerts</p>
+                <p className="text-hacker-muted">sem alertas pendentes</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {alertas.slice(0, 8).map((alerta) => (
+                <div key={alerta.id}
+                  className={`p-2.5 rounded border ${getAlertaColor(alerta.tipo)} transition-all`}>
+                  <div className="flex items-start gap-2 font-mono">
+                    <span className={`text-[10px] font-bold ${
+                      alerta.tipo === 'FORA_CERCA' ? 'text-red-400' :
+                      alerta.tipo === 'CHECKIN_ATRASADO' ? 'text-yellow-400' : 'text-hacker-glow'
+                    }`}>
+                      {getAlertaIcon(alerta.tipo)}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-hacker-glow">{alerta.filho.nome}</p>
+                      <p className="text-[10px] text-hacker-dim truncate">{alerta.mensagem}</p>
+                      <p className="text-[10px] text-hacker-muted mt-0.5">{formatDate(alerta.createdAt)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

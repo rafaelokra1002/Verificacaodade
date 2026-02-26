@@ -1,7 +1,7 @@
 'use client';
 
-// Layout do painel administrativo com sidebar
-// Protege as rotas admin verificando autenticação
+// Layout do painel administrativo - TEMA HACKER
+// Terminal-style sidebar com visual matrix/cyberpunk
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -19,9 +19,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [user, setUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [time, setTime] = useState('');
 
   // Não aplicar layout na página de login
   const isLoginPage = pathname === '/admin/login';
+
+  // Clock
+  useEffect(() => {
+    const tick = () => {
+      setTime(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    };
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const checkAuth = useCallback(async () => {
     try {
@@ -56,14 +67,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Loading
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-950">
+      <div className="min-h-screen flex items-center justify-center bg-hacker-bg">
         <div className="text-center">
-          <svg className="w-8 h-8 animate-spin text-primary-600 mx-auto mb-3" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
-          <p className="text-gray-500">Carregando...</p>
+          <div className="text-hacker-glow text-2xl animate-flicker mb-4 font-mono">&#9608;</div>
+          <p className="text-hacker-dim font-mono text-sm">Inicializando sistema...</p>
         </div>
       </div>
     );
@@ -72,74 +79,62 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Se não autenticado e não é página de login
   if (!user) return null;
 
-  // Itens do menu
+  // Itens do menu - estilo terminal
   const menuItems = [
-    {
-      href: '/admin',
-      label: 'Dashboard',
-      icon: (
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-        </svg>
-      ),
-    },
-    {
-      href: '/admin/clientes',
-      label: 'Clientes',
-      icon: (
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-      ),
-    },
-    {
-      href: '/admin/logs',
-      label: 'Logs',
-      icon: (
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-        </svg>
-      ),
-    },
+    { href: '/admin', label: 'dashboard', cmd: '~/dash' },
+    { href: '/admin/filhos', label: 'alvos', cmd: '~/targets' },
+    { href: '/admin/alertas', label: 'alertas', cmd: '~/alerts' },
+    { href: '/admin/logs', label: 'logs', cmd: '~/logs' },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 flex">
+    <div className="min-h-screen bg-hacker-bg flex font-mono">
       {/* Overlay mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/80 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - Terminal Style */}
       <aside
-        className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-64 bg-white dark:bg-zinc-900 border-r
-          border-gray-200 dark:border-zinc-800 flex flex-col transition-transform duration-300 ease-in-out
+        className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-64 bg-hacker-card border-r
+          border-hacker-border flex flex-col transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
-        {/* Header sidebar */}
-        <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-primary-600 flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
+        {/* Header sidebar - Terminal title bar */}
+        <div className="p-4 border-b border-hacker-border">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+              <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+              <div className="w-2.5 h-2.5 rounded-full bg-hacker-glow/80" />
             </div>
-            <div>
-              <h2 className="font-bold text-gray-900 dark:text-white text-sm">Verificação ID</h2>
-              <p className="text-xs text-gray-500">Painel Admin</p>
-            </div>
+            <span className="text-hacker-dim text-[10px] ml-1">terminal</span>
+          </div>
+          <div className="text-hacker-glow text-sm font-bold text-glow animate-flicker">
+            CTRL_PARENTAL
+          </div>
+          <div className="text-hacker-dim text-[10px] mt-1">
+            // sistema de monitoramento v2.0
           </div>
         </div>
 
-        {/* Menu */}
-        <nav className="flex-1 p-4 space-y-1">
+        {/* System status */}
+        <div className="px-4 py-3 border-b border-hacker-border">
+          <div className="flex items-center gap-2 text-[10px]">
+            <div className="w-1.5 h-1.5 rounded-full bg-hacker-glow animate-pulse" />
+            <span className="text-hacker-glow">ONLINE</span>
+            <span className="text-hacker-dim ml-auto">{time}</span>
+          </div>
+        </div>
+
+        {/* Menu - Terminal commands */}
+        <nav className="flex-1 p-3 space-y-0.5">
+          <div className="text-hacker-dim text-[10px] px-2 mb-2 uppercase tracking-wider">
+            {'>'} Navegação
+          </div>
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -147,42 +142,45 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 key={item.href}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+                className={`flex items-center gap-2 px-3 py-2 rounded text-sm transition-all group
                   ${isActive
-                    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
+                    ? 'bg-hacker-glow/10 text-hacker-glow border border-hacker-glow/30 shadow-neon'
+                    : 'text-hacker-dim hover:text-hacker-glow hover:bg-hacker-glow/5 border border-transparent'
                   }`}
               >
-                {item.icon}
-                {item.label}
+                <span className={`text-xs ${isActive ? 'text-hacker-glow' : 'text-hacker-muted group-hover:text-hacker-glow'}`}>
+                  $
+                </span>
+                <span className="flex-1">{item.label}</span>
+                <span className="text-[10px] text-hacker-muted">{item.cmd}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* User info + logout */}
-        <div className="p-4 border-t border-gray-200 dark:border-zinc-800">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
-              <span className="text-primary-700 dark:text-primary-400 text-sm font-bold">
-                {user.nome.charAt(0).toUpperCase()}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user.nome}</p>
-              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+        {/* User info + logout - Terminal style */}
+        <div className="p-3 border-t border-hacker-border">
+          <div className="px-2 mb-3">
+            <div className="text-[10px] text-hacker-dim mb-1">{'>'} sessão ativa</div>
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded bg-hacker-glow/10 border border-hacker-glow/30 flex items-center justify-center">
+                <span className="text-hacker-glow text-xs font-bold">
+                  {user.nome.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-hacker-glow truncate">{user.nome}</p>
+                <p className="text-[10px] text-hacker-dim truncate">{user.email}</p>
+              </div>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-600 dark:text-red-400
-                     hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded text-xs text-red-400
+                     hover:bg-red-900/20 border border-transparent hover:border-red-800/50 transition-all"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            Sair
+            <span className="text-red-500">$</span>
+            exit --session
           </button>
         </div>
       </aside>
@@ -190,17 +188,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main content */}
       <div className="flex-1 min-w-0">
         {/* Top bar mobile */}
-        <header className="lg:hidden sticky top-0 z-30 bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 px-4 py-3">
+        <header className="lg:hidden sticky top-0 z-30 bg-hacker-card border-b border-hacker-border px-4 py-3">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800"
+              className="p-2 rounded hover:bg-hacker-glow/10 border border-hacker-border hover:border-hacker-glow/30 transition-all"
             >
-              <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5 text-hacker-glow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <h1 className="font-bold text-gray-900 dark:text-white">Verificação ID</h1>
+            <span className="text-hacker-glow font-bold text-sm text-glow">CTRL_PARENTAL</span>
+            <span className="text-hacker-dim text-[10px] ml-auto">{time}</span>
           </div>
         </header>
 

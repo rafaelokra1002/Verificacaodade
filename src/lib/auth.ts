@@ -1,5 +1,5 @@
 // Utilitários de autenticação JWT
-// Gerencia tokens de sessão do administrador
+// Gerencia tokens de sessão do responsável
 
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';

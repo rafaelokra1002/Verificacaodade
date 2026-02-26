@@ -1,5 +1,6 @@
-// API de Verificação de Identidade
-// POST /api/verificacao - Receber foto + localização do cliente
+// API de Check-in de Localização
+// POST /api/checkin - Filho envia foto + localização
+// GET /api/checkin?token=xxx - Validar token
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,7 @@ import {
   getUserAgent,
   saveBase64Image,
   isTokenValid,
+  dentroDoPerimetro,
   errorResponse,
   successResponse,
 } from '@/lib/utils';
@@ -19,9 +21,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { token, foto, latitude, longitude } = body;
 
-    // Validar campos obrigatórios
     if (!token) {
-      return errorResponse('Token de verificação é obrigatório', 400);
+      return errorResponse('Token de check-in é obrigatório', 400);
     }
     if (!foto) {
       return errorResponse('Foto é obrigatória', 400);
@@ -31,92 +32,85 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar token no banco
-    const tokenRecord = await prisma.tokenVerificacao.findUnique({
+    const tokenRecord = await prisma.tokenCheckin.findUnique({
       where: { token },
-      include: { cliente: true },
+      include: {
+        filho: {
+          include: {
+            cercas: { where: { ativa: true } },
+          },
+        },
+      },
     });
 
     if (!tokenRecord) {
-      return errorResponse('Link de verificação inválido', 404);
+      return errorResponse('Link de check-in inválido', 404);
     }
 
-    // Validar token (não usado e não expirado)
     const validacao = isTokenValid(tokenRecord.expiracao, tokenRecord.usado);
     if (!validacao.valid) {
       return errorResponse(validacao.reason || 'Link inválido', 400);
     }
 
-    // Verificar se o cliente já possui verificação
-    const verificacaoExistente = await prisma.verificacao.findFirst({
-      where: { clienteId: tokenRecord.clienteId },
-    });
+    // Salvar a foto
+    const fotoPath = await saveBase64Image(foto, tokenRecord.filhoId);
 
-    if (verificacaoExistente) {
-      return errorResponse('Este cliente já foi verificado anteriormente', 400);
-    }
-
-    // Salvar a foto como base64
-    const fotoPath = await saveBase64Image(foto, tokenRecord.clienteId);
-
-    // Obter dados do request
     const ip = getClientIP(request);
     const userAgent = getUserAgent(request);
 
-    // Geocodificação reversa - obter endereço a partir das coordenadas
+    // Geocodificação reversa
     let endereco: string | null = null;
     try {
       const lat = parseFloat(String(latitude));
       const lng = parseFloat(String(longitude));
       const geoRes = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-        {
-          headers: { 'User-Agent': 'VerificacaoIdentidade/1.0' },
-        }
+        { headers: { 'User-Agent': 'ControleParental/1.0' } }
       );
       if (geoRes.ok) {
         const geoData = await geoRes.json();
         if (geoData.address) {
           const a = geoData.address;
           const parts = [];
-          // Rua e número
           if (a.road) {
             let rua = a.road;
             if (a.house_number) rua += `, ${a.house_number}`;
             parts.push(rua);
           }
-          // Bairro
           if (a.suburb || a.neighbourhood) {
             parts.push(a.suburb || a.neighbourhood);
           }
-          // Cidade
           if (a.city || a.town || a.village || a.municipality) {
             parts.push(a.city || a.town || a.village || a.municipality);
           }
-          // Estado
-          if (a.state) {
-            parts.push(a.state);
-          }
-          // CEP
-          if (a.postcode) {
-            parts.push(`CEP: ${a.postcode}`);
-          }
+          if (a.state) parts.push(a.state);
+          if (a.postcode) parts.push(`CEP: ${a.postcode}`);
           endereco = parts.join(' - ');
         }
       }
     } catch (geoErr) {
       console.error('Erro na geocodificação reversa:', geoErr);
-      // Não bloquear a verificação se geocoding falhar
     }
 
-    // Criar verificação e atualizar token/cliente em uma transação
+    const lat = parseFloat(String(latitude));
+    const lng = parseFloat(String(longitude));
+
+    // Verificar cercas virtuais
+    const alertasFora: { cercaNome: string }[] = [];
+    for (const cerca of tokenRecord.filho.cercas) {
+      if (!dentroDoPerimetro(lat, lng, cerca.latitude, cerca.longitude, cerca.raio)) {
+        alertasFora.push({ cercaNome: cerca.nome });
+      }
+    }
+
+    // Transação: criar check-in + alertas + marcar token
     const resultado = await prisma.$transaction(async (tx) => {
-      // Criar registro de verificação
-      const verificacao = await tx.verificacao.create({
+      const checkin = await tx.checkin.create({
         data: {
-          clienteId: tokenRecord.clienteId,
+          filhoId: tokenRecord.filhoId,
           foto: fotoPath,
-          latitude: parseFloat(String(latitude)),
-          longitude: parseFloat(String(longitude)),
+          latitude: lat,
+          longitude: lng,
           endereco,
           ip,
           userAgent,
@@ -124,42 +118,59 @@ export async function POST(request: NextRequest) {
       });
 
       // Marcar token como usado
-      await tx.tokenVerificacao.update({
+      await tx.tokenCheckin.update({
         where: { id: tokenRecord.id },
         data: { usado: true },
       });
 
-      // Atualizar status do cliente para VERIFICADO
-      await tx.cliente.update({
-        where: { id: tokenRecord.clienteId },
-        data: { status: 'VERIFICADO' },
+      // Alerta de check-in realizado
+      await tx.alerta.create({
+        data: {
+          filhoId: tokenRecord.filhoId,
+          tipo: 'CHECKIN_REALIZADO',
+          mensagem: `${tokenRecord.filho.nome} fez check-in${endereco ? ` em ${endereco}` : ''}`,
+          checkinId: checkin.id,
+        },
       });
 
-      // Registrar log de acesso
+      // Alertas de fora da cerca
+      for (const fora of alertasFora) {
+        await tx.alerta.create({
+          data: {
+            filhoId: tokenRecord.filhoId,
+            tipo: 'FORA_CERCA',
+            mensagem: `⚠️ ${tokenRecord.filho.nome} está FORA da cerca "${fora.cercaNome}"`,
+            checkinId: checkin.id,
+          },
+        });
+      }
+
+      // Log
       await tx.logAcesso.create({
         data: {
-          acao: 'VERIFICACAO_IDENTIDADE',
-          detalhes: `Cliente ${tokenRecord.cliente.nome} realizou verificação de identidade`,
+          acao: 'CHECKIN_REALIZADO',
+          detalhes: `${tokenRecord.filho.nome} realizou check-in`,
           ip,
           userAgent,
         },
       });
 
-      return verificacao;
+      return checkin;
     });
 
     return successResponse({
-      message: 'Verificação realizada com sucesso!',
-      verificacaoId: resultado.id,
+      message: 'Check-in realizado com sucesso!',
+      checkinId: resultado.id,
+      foraPerimetro: alertasFora.length > 0,
+      cercasVioladas: alertasFora.map(a => a.cercaNome),
     }, 201);
   } catch (error) {
-    console.error('Erro na verificação:', error);
+    console.error('Erro no check-in:', error);
     const message = error instanceof Error ? error.message : 'Erro desconhecido';
     return errorResponse(`Erro interno do servidor: ${message}`, 500);
   }
 }
 
-// GET /api/verificacao?token=xxx - Validar se o token é válido (sem enviar dados)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -169,17 +180,17 @@ export async function GET(request: NextRequest) {
       return errorResponse('Token é obrigatório', 400);
     }
 
-    const tokenRecord = await prisma.tokenVerificacao.findUnique({
+    const tokenRecord = await prisma.tokenCheckin.findUnique({
       where: { token },
       include: {
-        cliente: {
-          select: { id: true, nome: true, status: true },
+        filho: {
+          select: { id: true, nome: true },
         },
       },
     });
 
     if (!tokenRecord) {
-      return errorResponse('Link de verificação inválido', 404);
+      return errorResponse('Link de check-in inválido', 404);
     }
 
     const validacao = isTokenValid(tokenRecord.expiracao, tokenRecord.usado);
@@ -187,8 +198,8 @@ export async function GET(request: NextRequest) {
     return successResponse({
       valid: validacao.valid,
       reason: validacao.reason,
-      cliente: validacao.valid ? {
-        nome: tokenRecord.cliente.nome,
+      filho: validacao.valid ? {
+        nome: tokenRecord.filho.nome,
       } : undefined,
     });
   } catch (error) {

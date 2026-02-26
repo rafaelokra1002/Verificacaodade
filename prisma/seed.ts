@@ -1,5 +1,5 @@
 // Seed do banco de dados
-// Cria um administrador padrão para acesso inicial
+// Cria um responsável padrão e filhos de exemplo
 
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
@@ -9,48 +9,56 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Iniciando seed do banco de dados...');
 
-  // Criar administrador padrão
+  // Criar responsável padrão
   const senhaHash = await bcrypt.hash('admin123', 12);
 
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@sistema.com' },
+  const responsavel = await prisma.user.upsert({
+    where: { email: 'pai@familia.com' },
     update: {},
     create: {
-      email: 'admin@sistema.com',
+      email: 'pai@familia.com',
       password: senhaHash,
-      nome: 'Administrador',
+      nome: 'João (Pai)',
     },
   });
 
-  console.log(`✅ Admin criado: ${admin.email}`);
+  console.log(`✅ Responsável criado: ${responsavel.email}`);
 
-  // Criar alguns clientes de exemplo
-  const clientes = await Promise.all([
-    prisma.cliente.create({
+  // Criar filhos de exemplo
+  const filhos = await Promise.all([
+    prisma.filho.create({
       data: {
-        nome: 'João Silva',
-        telefone: '(11) 99999-0001',
+        nome: 'Lucas',
+        idade: 14,
+        dispositivo: 'iPhone 15',
+        responsavelId: responsavel.id,
       },
     }),
-    prisma.cliente.create({
+    prisma.filho.create({
       data: {
-        nome: 'Maria Santos',
-        telefone: '(11) 99999-0002',
+        nome: 'Ana',
+        idade: 12,
+        dispositivo: 'Samsung Galaxy A54',
+        responsavelId: responsavel.id,
       },
     }),
-    prisma.cliente.create({
+    prisma.filho.create({
       data: {
-        nome: 'Pedro Oliveira',
-        telefone: '(11) 99999-0003',
+        nome: 'Pedro',
+        idade: 8,
+        responsavelId: responsavel.id,
       },
     }),
   ]);
 
-  console.log(`✅ ${clientes.length} clientes criados`);
+  console.log(`✅ ${filhos.length} filhos cadastrados`);
   console.log('');
-  console.log('📋 Credenciais do admin:');
-  console.log('   Email: admin@sistema.com');
+  console.log('📋 Credenciais do responsável:');
+  console.log('   Email: pai@familia.com');
   console.log('   Senha: admin123');
+  console.log('');
+  console.log('👶 Filhos cadastrados:');
+  filhos.forEach(f => console.log(`   - ${f.nome}${f.idade ? ` (${f.idade} anos)` : ''}`));
   console.log('');
   console.log('🎉 Seed concluído com sucesso!');
 }

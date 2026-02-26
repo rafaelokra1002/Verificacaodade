@@ -1,46 +1,40 @@
-// API de Tokens de Verificação
-// POST /api/tokens - Gerar novo token para um cliente
+// API de Tokens de Check-in
+// POST /api/tokens - Gerar novo token para um filho
 
 export const dynamic = 'force-dynamic';
 
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthenticatedAdmin } from '@/lib/auth';
-import { generateVerificationToken, getTokenExpiration, errorResponse, successResponse } from '@/lib/utils';
+import { generateCheckinToken, getTokenExpiration, errorResponse, successResponse } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   try {
-    // Verificar autenticação
     const admin = await getAuthenticatedAdmin();
     if (!admin) {
       return errorResponse('Não autenticado', 401);
     }
 
     const body = await request.json();
-    const { clienteId } = body;
+    const { filhoId } = body;
 
-    if (!clienteId) {
-      return errorResponse('ID do cliente é obrigatório', 400);
+    if (!filhoId) {
+      return errorResponse('ID do filho é obrigatório', 400);
     }
 
-    // Verificar se o cliente existe
-    const cliente = await prisma.cliente.findUnique({
-      where: { id: clienteId },
+    // Verificar se o filho existe e pertence ao responsável
+    const filho = await prisma.filho.findUnique({
+      where: { id: filhoId, responsavelId: admin.userId },
     });
 
-    if (!cliente) {
-      return errorResponse('Cliente não encontrado', 404);
-    }
-
-    // Verificar se o cliente já foi verificado
-    if (cliente.status === 'VERIFICADO') {
-      return errorResponse('Este cliente já foi verificado', 400);
+    if (!filho) {
+      return errorResponse('Filho(a) não encontrado(a)', 404);
     }
 
     // Invalidar tokens anteriores não utilizados
-    await prisma.tokenVerificacao.updateMany({
+    await prisma.tokenCheckin.updateMany({
       where: {
-        clienteId,
+        filhoId,
         usado: false,
       },
       data: {
@@ -49,33 +43,33 @@ export async function POST(request: NextRequest) {
     });
 
     // Gerar novo token
-    const token = generateVerificationToken();
+    const token = generateCheckinToken();
     const expiracao = getTokenExpiration();
 
-    const tokenRecord = await prisma.tokenVerificacao.create({
+    const tokenRecord = await prisma.tokenCheckin.create({
       data: {
-        clienteId,
+        filhoId,
         token,
         expiracao,
       },
     });
 
-    // Construir URL de verificação
+    // Construir URL de check-in
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const verificationUrl = `${appUrl}/verificar?token=${token}`;
+    const checkinUrl = `${appUrl}/checkin?token=${token}`;
 
     // Registrar log
     await prisma.logAcesso.create({
       data: {
-        acao: 'GERAR_TOKEN',
-        detalhes: `Token gerado para cliente: ${cliente.nome}`,
+        acao: 'GERAR_TOKEN_CHECKIN',
+        detalhes: `Token de check-in gerado para: ${filho.nome}`,
         userId: admin.userId,
       },
     });
 
     return successResponse({
       token: tokenRecord,
-      url: verificationUrl,
+      url: checkinUrl,
       expiracao: tokenRecord.expiracao,
     }, 201);
   } catch (error) {

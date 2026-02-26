@@ -1,10 +1,10 @@
-// Layout raiz da aplicação
+// Layout raiz da aplicação - Tema Hacker
 import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Verificação de Identidade',
-  description: 'Sistema de verificação de identidade para clientes de empréstimos',
+  title: 'CTRL_PARENTAL // Sistema de Monitoramento',
+  description: 'Sistema de controle parental para monitoramento de localização dos filhos',
 };
 
 export default function RootLayout({
@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className="min-h-screen bg-gray-50 dark:bg-zinc-950 antialiased">
+      <body className="min-h-screen bg-hacker-bg font-mono antialiased matrix-bg">
         {children}
       </body>
     </html>

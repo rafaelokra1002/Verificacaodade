@@ -1,8 +1,8 @@
 'use client';
 
-// Página de Login do Administrador
+// Página de Login - TEMA HACKER / Terminal
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function AdminLoginPage() {
@@ -11,6 +11,30 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [bootText, setBootText] = useState<string[]>([]);
+  const [booted, setBooted] = useState(false);
+
+  // Boot sequence effect
+  useEffect(() => {
+    const lines = [
+      '> Inicializando CTRL_PARENTAL...',
+      '> Carregando módulos de segurança...',
+      '> Estabelecendo conexão criptografada...',
+      '> Verificando integridade do sistema...',
+      '> Sistema pronto. Aguardando autenticação.',
+    ];
+    let i = 0;
+    const timer = setInterval(() => {
+      if (i < lines.length) {
+        setBootText((prev) => [...prev, lines[i]]);
+        i++;
+      } else {
+        clearInterval(timer);
+        setTimeout(() => setBooted(true), 300);
+      }
+    }, 400);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -27,102 +51,131 @@ export default function AdminLoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Erro ao fazer login');
+        setError(data.error || 'ERRO: Credenciais inválidas');
         return;
       }
 
       router.push('/admin');
     } catch {
-      setError('Erro de conexão. Tente novamente.');
+      setError('ERRO: Falha na conexão. Tente novamente.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-gray-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        {/* Logo e título */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-600 mb-4 shadow-lg shadow-primary-600/30">
-            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-white">Painel Administrativo</h1>
-          <p className="text-gray-400 text-sm mt-1">Verificação de Identidade</p>
-        </div>
+    <div className="min-h-screen bg-hacker-bg flex items-center justify-center p-4 matrix-bg relative overflow-hidden">
+      {/* Matrix rain background effect */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30'%3E%3Ctext x='5' y='20' fill='%2300ff41' font-size='14' font-family='monospace'%3E0%3C/text%3E%3C/svg%3E")`,
+          backgroundSize: '30px 30px',
+        }} />
+      </div>
 
-        {/* Formulário */}
-        <div className="bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10 p-6 shadow-xl">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1.5">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@sistema.com"
-                required
-                className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white
-                         placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500
-                         focus:border-transparent transition-all"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1.5">
-                Senha
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white
-                         placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500
-                         focus:border-transparent transition-all"
-              />
-            </div>
-
-            {error && (
-              <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/30">
-                <p className="text-red-300 text-sm text-center">{error}</p>
+      <div className="w-full max-w-md relative z-10">
+        {/* Boot sequence */}
+        <div className={`mb-6 transition-all duration-500 ${booted ? 'opacity-40 max-h-20 overflow-hidden' : 'opacity-100'}`}>
+          <div className="bg-hacker-card border border-hacker-border rounded p-4 font-mono text-xs">
+            {bootText.map((line, i) => (
+              <div key={i} className="text-hacker-dim leading-relaxed">
+                {line}
+                {i === bootText.length - 1 && !booted && (
+                  <span className="inline-block w-2 h-3 bg-hacker-glow ml-1 animate-pulse" />
+                )}
               </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-medium
-                       transition-all duration-200 shadow-lg shadow-primary-600/30 hover:shadow-primary-600/50
-                       disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Entrando...
-                </>
-              ) : (
-                'Entrar'
-              )}
-            </button>
-          </form>
+            ))}
+          </div>
         </div>
 
-        {/* Info */}
-        <p className="text-center text-xs text-gray-500 mt-6">
-          Acesso restrito a administradores autorizados
+        {/* Terminal login box */}
+        <div className={`transition-all duration-500 ${booted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          {/* Terminal title bar */}
+          <div className="bg-hacker-surface border border-hacker-border border-b-0 rounded-t px-4 py-2 flex items-center gap-2">
+            <div className="flex gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+              <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+              <div className="w-2.5 h-2.5 rounded-full bg-hacker-glow/80" />
+            </div>
+            <span className="text-hacker-dim text-[10px] ml-2">root@ctrl_parental:~</span>
+          </div>
+
+          {/* Login form */}
+          <div className="bg-hacker-card border border-hacker-border rounded-b p-6">
+            <div className="text-center mb-6">
+              <div className="text-hacker-glow text-3xl font-bold text-glow animate-flicker mb-2 tracking-wider">
+                {'{>'} LOGIN
+              </div>
+              <div className="text-hacker-dim text-xs">
+                // autenticação requerida
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label htmlFor="email" className="block text-xs text-hacker-dim mb-1.5 font-mono">
+                  <span className="text-hacker-glow">$</span> email:
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="user@system.com"
+                  required
+                  className="w-full px-4 py-2.5 rounded bg-hacker-input border border-hacker-border text-hacker-glow
+                           placeholder-hacker-muted focus:outline-none focus:ring-1 focus:ring-hacker-glow
+                           focus:border-hacker-glow transition-all font-mono text-sm caret-hacker-glow"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-xs text-hacker-dim mb-1.5 font-mono">
+                  <span className="text-hacker-glow">$</span> senha:
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="w-full px-4 py-2.5 rounded bg-hacker-input border border-hacker-border text-hacker-glow
+                           placeholder-hacker-muted focus:outline-none focus:ring-1 focus:ring-hacker-glow
+                           focus:border-hacker-glow transition-all font-mono text-sm caret-hacker-glow"
+                />
+              </div>
+
+              {error && (
+                <div className="p-3 rounded bg-red-900/30 border border-red-800/50">
+                  <p className="text-red-400 text-xs text-center font-mono">[!] {error}</p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-2.5 rounded bg-hacker-glow/10 hover:bg-hacker-glow/20 text-hacker-glow font-medium
+                         transition-all duration-200 border border-hacker-glow/40 hover:border-hacker-glow
+                         hover:shadow-neon disabled:opacity-50 disabled:cursor-not-allowed
+                         flex items-center justify-center gap-2 text-sm font-mono"
+              >
+                {loading ? (
+                  <>
+                    <span className="inline-block w-3 h-3 border border-hacker-glow border-t-transparent rounded-full animate-spin" />
+                    Autenticando...
+                  </>
+                ) : (
+                  <>{'>>'} Acessar Sistema</>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <p className="text-center text-[10px] text-hacker-muted mt-6 font-mono">
+          [CTRL_PARENTAL] // Acesso restrito // Todas as ações são registradas
         </p>
       </div>
     </div>
