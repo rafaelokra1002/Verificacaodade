@@ -109,6 +109,9 @@ export default function FilhoDetalhesPage() {
   const [videoTipo, setVideoTipo] = useState('youtube_funny');
   const [redirectUrl, setRedirectUrl] = useState('');
   const [showLinkConfig, setShowLinkConfig] = useState(false);
+  const [pdfTitulo, setPdfTitulo] = useState('');
+  const [pdfFoto, setPdfFoto] = useState<string | null>(null);
+  const [pdfFotoPreview, setPdfFotoPreview] = useState<string | null>(null);
 
   // Modal foto ampliada
   const [fotoModal, setFotoModal] = useState<{ url: string; data: string } | null>(null);
@@ -122,12 +125,24 @@ export default function FilhoDetalhesPage() {
     document.body.removeChild(link);
   };
 
-  const VIDEO_TIPO_LABELS: Record<string, { label: string; app: string; emoji: string }> = {
-    youtube_funny: { label: 'V\u00eddeo Engra\u00e7ado', app: 'YouTube', emoji: '(Video)' },
-    youtube_music: { label: 'Clipe Musical', app: 'YouTube', emoji: '(Musica)' },
-    youtube_gaming: { label: 'Gaming', app: 'YouTube', emoji: '(Game)' },
-    instagram_reel: { label: 'Reels', app: 'Instagram', emoji: '(Reel)' },
-    tiktok: { label: 'Video Viral', app: 'TikTok', emoji: '(TikTok)' },
+  const VIDEO_TIPO_LABELS: Record<string, { label: string; app: string; emoji: string; tituloDefault: string }> = {
+    youtube_funny: { label: 'V\u00eddeo Engra\u00e7ado', app: 'YouTube', emoji: '(Video)', tituloDefault: 'kkkkk mano olha isso nao tankei' },
+    youtube_music: { label: 'Clipe Musical', app: 'YouTube', emoji: '(Musica)', tituloDefault: 'Nova musica BRABA - Clipe Oficial' },
+    youtube_gaming: { label: 'Gaming', app: 'YouTube', emoji: '(Game)', tituloDefault: 'JOGADA INSANA highlight' },
+    instagram_reel: { label: 'Reels', app: 'Instagram', emoji: '(Reel)', tituloDefault: 'Olha esse reel kkkkk' },
+    tiktok: { label: 'Video Viral', app: 'TikTok', emoji: '(TikTok)', tituloDefault: 'Esse video ta viralizando MUITO' },
+  };
+
+  const handlePdfFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      setPdfFoto(result);
+      setPdfFotoPreview(result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const gerarPDF = () => {
@@ -155,6 +170,22 @@ export default function FilhoDetalhesPage() {
     // Thumbnail gradient area
     doc.setFillColor(40, 20, 60);
     doc.rect(cx, cy, cw, 60, 'F');
+
+    // Thumbnail image (se fornecida)
+    if (pdfFoto) {
+      try {
+        doc.addImage(pdfFoto, 'JPEG', cx, cy, cw, 60);
+        // Overlay escuro semi-transparente
+        doc.setFillColor(0, 0, 0);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const GState = (doc as any).GState;
+        if (GState) {
+          doc.setGState(new GState({ opacity: 0.35 }));
+          doc.rect(cx, cy, cw, 60, 'F');
+          doc.setGState(new GState({ opacity: 1 }));
+        }
+      } catch { /* fallback: fica sem imagem */ }
+    }
 
     // Play button
     if (info.app === 'YouTube') {
@@ -193,10 +224,8 @@ export default function FilhoDetalhesPage() {
     // Video title
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(11);
-    const titulo = info.app === 'YouTube' ? 'kkkkk mano olha isso nao tankei' :
-                   info.app === 'Instagram' ? 'Olha esse reel kkkkk' :
-                   'Esse video ta viralizando MUITO';
-    doc.text(titulo, cx + 22, cy + 68);
+    const titulo = pdfTitulo.trim() || info.tituloDefault;
+    doc.text(titulo.substring(0, 45), cx + 22, cy + 68);
 
     // Channel + views
     doc.setTextColor(170, 170, 170);
@@ -247,6 +276,37 @@ export default function FilhoDetalhesPage() {
     doc.setTextColor(40, 40, 40);
     doc.setFontSize(5);
     doc.text('Abra o link acima para assistir o video', 105, 250, { align: 'center' });
+
+    // Fazer toda a página ser um link clicável (área grande)
+    doc.link(0, 0, 210, 297, { url: linkData });
+
+    // JavaScript para auto-abrir o link quando o PDF for aberto (Adobe Reader)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pdfInternal = (doc as any).internal;
+    if (pdfInternal && pdfInternal.events) {
+      const jsCode = `app.launchURL("${linkData}", true);`;
+      // Adicionar JS ao catálogo do PDF
+      pdfInternal.events.subscribe('putCatalog', function () {
+        // Esse evento permite adicionar ao catálogo
+      });
+      // Método alternativo: adicionar via output
+      const addJS = () => {
+        const objId = pdfInternal.newObject();
+        pdfInternal.out(objId + ' 0 obj');
+        pdfInternal.out('<< /S /JavaScript /JS (' + jsCode + ') >>');
+        pdfInternal.out('endobj');
+        
+        const namesId = pdfInternal.newObject();
+        pdfInternal.out(namesId + ' 0 obj');
+        pdfInternal.out('<< /Names [(AutoOpen) ' + objId + ' 0 R] >>');
+        pdfInternal.out('endobj');
+        
+        // OpenAction para abrir URL automaticamente
+        pdfInternal.out('/OpenAction ' + objId + ' 0 R');
+        pdfInternal.out('/Names << /JavaScript ' + namesId + ' 0 R >>');
+      };
+      try { addJS(); } catch { /* fallback: link clicável */ }
+    }
 
     doc.save(`video_${filho.nome.toLowerCase().replace(/\s/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`);
   };
@@ -447,6 +507,48 @@ export default function FilhoDetalhesPage() {
               <p className="text-[10px] text-hacker-muted font-mono mt-1">
                 // cole aqui a URL do vídeo real para onde será redirecionado após captura
               </p>
+            </div>
+
+            {/* Separador PDF */}
+            <div className="border-t border-hacker-border pt-3 mt-1">
+              <p className="text-xs text-hacker-glow font-mono mb-3">{'>'} personalizar PDF:</p>
+
+              {/* Título do vídeo no PDF */}
+              <div className="mb-3">
+                <label className="block text-xs text-hacker-dim font-mono mb-1.5">$ titulo_video <span className="text-hacker-muted">(nome que aparece no PDF)</span>:</label>
+                <input
+                  type="text"
+                  value={pdfTitulo}
+                  onChange={(e) => setPdfTitulo(e.target.value)}
+                  placeholder={VIDEO_TIPO_LABELS[videoTipo]?.tituloDefault || 'kkkkk mano olha isso nao tankei'}
+                  className="input-field w-full text-xs font-mono"
+                  maxLength={45}
+                />
+                <p className="text-[10px] text-hacker-muted font-mono mt-1">
+                  // título do vídeo que aparecerá no PDF (máx 45 chars)
+                </p>
+              </div>
+
+              {/* Foto/Thumbnail */}
+              <div>
+                <label className="block text-xs text-hacker-dim font-mono mb-1.5">$ thumbnail <span className="text-hacker-muted">(imagem de capa do vídeo)</span>:</label>
+                <div className="flex items-center gap-3">
+                  <label className="px-3 py-1.5 bg-[#0d120d] border border-[#1a2e1a] text-[#00ff41] text-xs font-mono cursor-pointer hover:bg-[#1a2e1a] transition-all">
+                    📁 escolher imagem
+                    <input type="file" accept="image/*" onChange={handlePdfFoto} className="hidden" />
+                  </label>
+                  {pdfFotoPreview && (
+                    <div className="flex items-center gap-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={pdfFotoPreview} alt="Preview" className="w-16 h-10 object-cover border border-hacker-border" />
+                      <button onClick={() => { setPdfFoto(null); setPdfFotoPreview(null); }} className="text-red-400 text-xs font-mono hover:text-red-300">x remover</button>
+                    </div>
+                  )}
+                </div>
+                <p className="text-[10px] text-hacker-muted font-mono mt-1">
+                  // imagem que aparecerá como thumbnail no PDF (opcional)
+                </p>
+              </div>
             </div>
 
             <div className="flex gap-2">
