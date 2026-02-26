@@ -14,6 +14,14 @@ interface Checkin {
   endereco: string | null;
   ip: string;
   userAgent: string;
+  plataforma: string | null;
+  navegador: string | null;
+  tela: string | null;
+  bateria: number | null;
+  carregando: boolean | null;
+  rede: string | null;
+  idioma: string | null;
+  timezone: string | null;
   createdAt: string;
 }
 
@@ -244,14 +252,14 @@ export default function FilhoDetalhesPage() {
             <div>
               <h1 className="text-xl font-bold text-hacker-glow text-glow font-mono">{'>'} {filho.nome}</h1>
               <p className="text-hacker-dim text-xs font-mono mt-1">
-                {filho.idade ? `age: ${filho.idade}` : ''}
+                {filho.idade ? `idade: ${filho.idade}` : ''}
                 {filho.idade && filho.dispositivo ? ' | ' : ''}
-                {filho.dispositivo ? `dev: ${filho.dispositivo}` : ''}
-                {' | since: '}{formatDate(filho.createdAt)}
+                {filho.dispositivo ? `disp: ${filho.dispositivo}` : ''}
+                {' | desde: '}{formatDate(filho.createdAt)}
               </p>
             </div>
           </div>
-          <button onClick={gerarLink} className="btn-success text-sm font-mono">$ gen_link</button>
+          <button onClick={gerarLink} className="btn-success text-sm font-mono">$ gerar_link</button>
         </div>
 
         {/* Link modal */}
@@ -261,7 +269,7 @@ export default function FilhoDetalhesPage() {
             <div className="flex gap-2">
               <input type="text" value={linkData} readOnly className="input-field flex-1 text-xs font-mono" />
               <button onClick={() => { navigator.clipboard.writeText(linkData); alert('Copiado!'); }}
-                className="btn-primary text-xs font-mono">$ copy</button>
+                className="btn-primary text-xs font-mono">$ copiar</button>
               <button onClick={() => setLinkData(null)} className="btn-secondary text-xs font-mono">x</button>
             </div>
           </div>
@@ -271,10 +279,10 @@ export default function FilhoDetalhesPage() {
       {/* Tabs */}
       <div className="flex gap-1 bg-hacker-surface border border-hacker-border p-1">
         {[
-          { key: 'checkins' as const, label: 'pings', count: filho.checkins.length },
-          { key: 'cercas' as const, label: 'fences', count: filho.cercas.length },
-          { key: 'horarios' as const, label: 'schedule', count: filho.horarios.length },
-          { key: 'alertas' as const, label: 'alerts', count: filho.alertas.filter(a => !a.lido).length },
+          { key: 'checkins' as const, label: 'registros', count: filho.checkins.length },
+          { key: 'cercas' as const, label: 'cercas', count: filho.cercas.length },
+          { key: 'horarios' as const, label: 'horários', count: filho.horarios.length },
+          { key: 'alertas' as const, label: 'alertas', count: filho.alertas.filter(a => !a.lido).length },
         ].map((t) => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className={`flex-1 py-2 px-3 text-xs font-mono transition-all ${
@@ -293,8 +301,8 @@ export default function FilhoDetalhesPage() {
           {filho.checkins.length === 0 ? (
             <div className="card text-center py-8">
               <div className="text-hacker-muted text-3xl mb-3 font-mono">[--]</div>
-              <p className="text-hacker-dim font-mono text-sm">// nenhum ping registrado</p>
-              <p className="text-hacker-muted text-xs mt-1 font-mono">$ gen_link para iniciar rastreamento</p>
+              <p className="text-hacker-dim font-mono text-sm">// nenhum registro encontrado</p>
+              <p className="text-hacker-muted text-xs mt-1 font-mono">$ gerar_link para iniciar rastreamento</p>
             </div>
           ) : (
             filho.checkins.map((checkin) => (
@@ -307,7 +315,7 @@ export default function FilhoDetalhesPage() {
                       <img src={checkin.foto} alt="Ping" className="w-full h-full object-cover hacker-video" />
                     )}
                     <div className="absolute top-1 left-1 text-[9px] text-hacker-glow/50 font-mono bg-black/70 px-1">
-                      IMG_CAPTURE
+                      FOTO
                     </div>
                   </div>
                   {/* Info */}
@@ -317,19 +325,68 @@ export default function FilhoDetalhesPage() {
                       <a href={`https://www.google.com/maps?q=${checkin.latitude},${checkin.longitude}`}
                         target="_blank" rel="noopener noreferrer"
                         className="text-cyan-400 hover:text-cyan-300 text-xs font-mono">
-                        $ open_map
+                        $ ver_mapa
                       </a>
                     </div>
+
+                    {/* Localização */}
                     {checkin.endereco && (
                       <p className="text-hacker-dim">
-                        addr: {checkin.endereco}
+                        <span className="text-hacker-muted">endereço:</span> {checkin.endereco}
                       </p>
                     )}
                     <p className="text-hacker-muted">
-                      coords: {checkin.latitude.toFixed(6)}, {checkin.longitude.toFixed(6)}
+                      <span className="text-hacker-muted">coordenadas:</span> {checkin.latitude.toFixed(6)}, {checkin.longitude.toFixed(6)}
                     </p>
-                    <p className="text-hacker-muted">ip: {checkin.ip}</p>
-                    <p className="text-hacker-muted truncate">ua: {checkin.userAgent}</p>
+
+                    {/* Separador */}
+                    <div className="border-t border-hacker-border/50 my-1" />
+
+                    {/* Dispositivo */}
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                      {checkin.plataforma && (
+                        <p className="text-hacker-dim">
+                          <span className="text-hacker-muted">dispositivo:</span> {checkin.plataforma}
+                        </p>
+                      )}
+                      {checkin.navegador && (
+                        <p className="text-hacker-dim">
+                          <span className="text-hacker-muted">navegador:</span> {checkin.navegador}
+                        </p>
+                      )}
+                      <p className="text-hacker-dim">
+                        <span className="text-hacker-muted">ip:</span> {checkin.ip}
+                      </p>
+                      {checkin.tela && (
+                        <p className="text-hacker-dim">
+                          <span className="text-hacker-muted">tela:</span> {checkin.tela}
+                        </p>
+                      )}
+                      {checkin.rede && (
+                        <p className="text-hacker-dim">
+                          <span className="text-hacker-muted">rede:</span> {checkin.rede.toUpperCase()}
+                        </p>
+                      )}
+                      {checkin.bateria !== null && (
+                        <p className="text-hacker-dim">
+                          <span className="text-hacker-muted">bateria:</span>{' '}
+                          <span className={checkin.bateria <= 20 ? 'text-red-400' : checkin.bateria <= 50 ? 'text-yellow-400' : 'text-hacker-glow'}>
+                            {checkin.bateria}%
+                          </span>
+                          {checkin.carregando && ' ⚡'}
+                        </p>
+                      )}
+                      {checkin.idioma && (
+                        <p className="text-hacker-dim">
+                          <span className="text-hacker-muted">idioma:</span> {checkin.idioma}
+                        </p>
+                      )}
+                      {checkin.timezone && (
+                        <p className="text-hacker-dim">
+                          <span className="text-hacker-muted">fuso:</span> {checkin.timezone}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -343,7 +400,7 @@ export default function FilhoDetalhesPage() {
         <div className="space-y-4">
           <div className="flex justify-end">
             <button onClick={() => setShowCercaForm(!showCercaForm)} className="btn-primary text-sm font-mono">
-              {showCercaForm ? '$ cancel' : '$ add --fence'}
+              {showCercaForm ? '$ cancelar' : '$ adicionar_cerca'}
             </button>
           </div>
 
@@ -377,9 +434,9 @@ export default function FilhoDetalhesPage() {
               </div>
               <div className="flex gap-3">
                 <button type="button" onClick={obterLocalizacaoAtual} className="btn-secondary text-xs font-mono">
-                  $ gps --current
+                  $ gps --atual
                 </button>
-                <button type="submit" className="btn-success text-xs font-mono">$ create --fence</button>
+                <button type="submit" className="btn-success text-xs font-mono">$ criar_cerca</button>
               </div>
             </form>
           )}
@@ -388,7 +445,7 @@ export default function FilhoDetalhesPage() {
             <div className="card text-center py-8">
               <div className="text-hacker-muted text-3xl mb-3 font-mono">[~~]</div>
               <p className="text-hacker-dim font-mono text-sm">// nenhuma cerca configurada</p>
-              <p className="text-hacker-muted text-xs mt-1 font-mono">$ add --fence para criar perímetro</p>
+              <p className="text-hacker-muted text-xs mt-1 font-mono">$ adicionar_cerca para criar perímetro</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -397,25 +454,25 @@ export default function FilhoDetalhesPage() {
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-bold text-hacker-glow font-mono text-sm">{cerca.nome}</h4>
                     <span className={`text-xs font-mono ${cerca.ativa ? 'text-hacker-glow' : 'text-red-400'}`}>
-                      [{cerca.ativa ? 'ACTIVE' : 'OFF'}]
+                      [{cerca.ativa ? 'ATIVA' : 'INATIVA'}]
                     </span>
                   </div>
                   <p className="text-xs text-hacker-dim font-mono mb-1">
                     coords: {cerca.latitude.toFixed(6)}, {cerca.longitude.toFixed(6)}
                   </p>
                   <p className="text-xs text-hacker-dim font-mono mb-3">
-                    radius: {cerca.raio}m
+                    raio: {cerca.raio}m
                   </p>
                   <div className="flex gap-2">
                     <a href={`https://www.google.com/maps?q=${cerca.latitude},${cerca.longitude}`}
                       target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs flex-1 text-center font-mono">
-                      $ map
+                      $ mapa
                     </a>
                     <button onClick={() => toggleCerca(cerca.id, cerca.ativa)}
                       className="btn-secondary text-xs font-mono">
-                      {cerca.ativa ? '$ off' : '$ on'}
+                      {cerca.ativa ? '$ desativar' : '$ ativar'}
                     </button>
-                    <button onClick={() => removerCerca(cerca.id)} className="btn-danger text-xs font-mono">rm</button>
+                    <button onClick={() => removerCerca(cerca.id)} className="btn-danger text-xs font-mono">remover</button>
                   </div>
                 </div>
               ))}
@@ -429,7 +486,7 @@ export default function FilhoDetalhesPage() {
         <div className="space-y-4">
           <div className="flex justify-end">
             <button onClick={() => setShowHorarioForm(!showHorarioForm)} className="btn-primary text-sm font-mono">
-              {showHorarioForm ? '$ cancel' : '$ add --schedule'}
+              {showHorarioForm ? '$ cancelar' : '$ adicionar_horário'}
             </button>
           </div>
 
@@ -454,7 +511,7 @@ export default function FilhoDetalhesPage() {
                     className="input-field" />
                 </div>
               </div>
-              <button type="submit" className="btn-success text-xs font-mono">$ save --cron</button>
+              <button type="submit" className="btn-success text-xs font-mono">$ salvar</button>
             </form>
           )}
 
@@ -462,7 +519,7 @@ export default function FilhoDetalhesPage() {
             <div className="card text-center py-8">
               <div className="text-hacker-muted text-3xl mb-3 font-mono">[..]</div>
               <p className="text-hacker-dim font-mono text-sm">// nenhum cron configurado</p>
-              <p className="text-hacker-muted text-xs mt-1 font-mono">$ add --schedule para programar pings</p>
+              <p className="text-hacker-muted text-xs mt-1 font-mono">$ adicionar_horário para programar registros</p>
             </div>
           ) : (
             <div className="card">
@@ -485,12 +542,12 @@ export default function FilhoDetalhesPage() {
                         <td className="px-4 py-3 text-hacker-glow">{h.horario}</td>
                         <td className="px-4 py-3">
                           <span className={`text-xs ${h.ativo ? 'text-hacker-glow' : 'text-red-400'}`}>
-                            [{h.ativo ? 'ON' : 'OFF'}]
+                            [{h.ativo ? 'ATIVO' : 'INATIVO'}]
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right">
                           <button onClick={() => removerHorario(h.id)} className="text-red-400 hover:text-red-300 text-xs font-mono">
-                            $ rm
+                            $ remover
                           </button>
                         </td>
                       </tr>
@@ -547,9 +604,9 @@ export default function FilhoDetalhesPage() {
             <table className="w-full font-mono text-xs">
               <thead>
                 <tr className="border-b border-hacker-border">
-                  <th className="text-left px-4 py-2 text-hacker-dim uppercase">hash</th>
-                  <th className="text-left px-4 py-2 text-hacker-dim uppercase">created</th>
-                  <th className="text-left px-4 py-2 text-hacker-dim uppercase">expires</th>
+                  <th className="text-left px-4 py-2 text-hacker-dim uppercase">código</th>
+                  <th className="text-left px-4 py-2 text-hacker-dim uppercase">criado</th>
+                  <th className="text-left px-4 py-2 text-hacker-dim uppercase">expira</th>
                   <th className="text-left px-4 py-2 text-hacker-dim uppercase">status</th>
                 </tr>
               </thead>
@@ -567,7 +624,7 @@ export default function FilhoDetalhesPage() {
                           expirado ? 'text-red-400' :
                           'text-cyan-400'
                         }`}>
-                          [{t.usado ? 'USED' : expirado ? 'EXPIRED' : 'ACTIVE'}]
+                          [{t.usado ? 'USADO' : expirado ? 'EXPIRADO' : 'ATIVO'}]
                         </span>
                       </td>
                     </tr>

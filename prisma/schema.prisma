@@ -47,15 +47,23 @@ model Filho {
 
 /// Check-in de localização realizado pelo filho
 model Checkin {
-  id        String   @id @default(cuid())
-  filhoId   String
-  foto      String   @db.Text
-  latitude  Float
-  longitude Float
-  endereco  String?  @db.Text
-  ip        String
-  userAgent String
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  filhoId     String
+  foto        String   @db.Text
+  latitude    Float
+  longitude   Float
+  endereco    String?  @db.Text
+  ip          String
+  userAgent   String
+  plataforma  String?  // ex: "iPhone", "Android", "Windows"
+  navegador   String?  // ex: "Chrome 120", "Safari 17"
+  tela        String?  // ex: "390x844" (largura x altura)
+  bateria     Int?     // nível de bateria 0-100
+  carregando  Boolean? // se está carregando
+  rede        String?  // tipo de conexão: "wifi", "4g", "3g"
+  idioma      String?  // idioma do navegador
+  timezone    String?  // fuso horário
+  createdAt   DateTime @default(now())
 
   filho   Filho    @relation(fields: [filhoId], references: [id], onDelete: Cascade)
   alertas Alerta[]

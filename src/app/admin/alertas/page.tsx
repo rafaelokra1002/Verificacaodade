@@ -65,10 +65,10 @@ export default function AlertasPage() {
 
   const getAlertaStyle = (tipo: string) => {
     switch (tipo) {
-      case 'FORA_CERCA': return { icon: '[!!!]', color: 'border-l-red-500 bg-red-900/10', badge: 'bg-red-900/30 text-red-400 border-red-800/50', label: 'BREACH' };
-      case 'CHECKIN_REALIZADO': return { icon: '[OK]', color: 'border-l-hacker-glow bg-hacker-glow/5', badge: 'bg-hacker-glow/10 text-hacker-glow border-hacker-glow/30', label: 'PING' };
-      case 'CHECKIN_ATRASADO': return { icon: '[LATE]', color: 'border-l-yellow-500 bg-yellow-900/10', badge: 'bg-yellow-900/30 text-yellow-400 border-yellow-800/50', label: 'TIMEOUT' };
-      case 'NOVO_DISPOSITIVO': return { icon: '[DEV]', color: 'border-l-purple-500 bg-purple-900/10', badge: 'bg-purple-900/30 text-purple-400 border-purple-800/50', label: 'NEW_DEV' };
+      case 'FORA_CERCA': return { icon: '[!!!]', color: 'border-l-red-500 bg-red-900/10', badge: 'bg-red-900/30 text-red-400 border-red-800/50', label: 'VIOLAÇÃO' };
+      case 'CHECKIN_REALIZADO': return { icon: '[OK]', color: 'border-l-hacker-glow bg-hacker-glow/5', badge: 'bg-hacker-glow/10 text-hacker-glow border-hacker-glow/30', label: 'REGISTRO' };
+      case 'CHECKIN_ATRASADO': return { icon: '[ATRASO]', color: 'border-l-yellow-500 bg-yellow-900/10', badge: 'bg-yellow-900/30 text-yellow-400 border-yellow-800/50', label: 'ATRASADO' };
+      case 'NOVO_DISPOSITIVO': return { icon: '[DISP]', color: 'border-l-purple-500 bg-purple-900/10', badge: 'bg-purple-900/30 text-purple-400 border-purple-800/50', label: 'NOVO_DISP' };
       default: return { icon: '[>>]', color: 'border-l-hacker-border', badge: 'bg-hacker-surface text-hacker-dim border-hacker-border', label: 'INFO' };
     }
   };
@@ -102,7 +102,7 @@ export default function AlertasPage() {
         </div>
         {totalNaoLidos > 0 && (
           <button onClick={marcarTodosLidos} className="btn-secondary text-xs font-mono">
-            $ mark_all --read
+            $ marcar_todos --lido
           </button>
         )}
       </div>
@@ -116,7 +116,7 @@ export default function AlertasPage() {
                 ? 'bg-hacker-glow/10 text-hacker-glow border-hacker-glow/30 shadow-neon'
                 : 'bg-hacker-surface text-hacker-dim border-hacker-border hover:border-hacker-glow/20'
             }`}>
-            {f === 'todos' ? '$ --all' : '$ --unread'}
+            {f === 'todos' ? '$ todos' : '$ não_lidos'}
           </button>
         ))}
       </div>
@@ -162,13 +162,13 @@ export default function AlertasPage() {
                         <a href={`https://www.google.com/maps?q=${alerta.checkin.latitude},${alerta.checkin.longitude}`}
                           target="_blank" rel="noopener noreferrer"
                           className="text-[10px] text-cyan-400 hover:text-cyan-300">
-                          $ open_map
+                          $ ver_mapa
                         </a>
                       )}
                       {!alerta.lido && (
                         <button onClick={() => marcarLido(alerta.id)}
                           className="text-[10px] text-hacker-muted hover:text-hacker-glow transition-colors">
-                          $ mark --read
+                          $ marcar --lido
                         </button>
                       )}
                     </div>

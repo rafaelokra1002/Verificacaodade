@@ -99,7 +99,7 @@ export default function AdminDashboardPage() {
     switch (tipo) {
       case 'FORA_CERCA': return '[!!!]';
       case 'CHECKIN_REALIZADO': return '[OK]';
-      case 'CHECKIN_ATRASADO': return '[LATE]';
+      case 'CHECKIN_ATRASADO': return '[ATRASO]';
       case 'NOVO_DISPOSITIVO': return '[DEV]';
       default: return '[>>]';
     }
@@ -135,17 +135,17 @@ export default function AdminDashboardPage() {
           <p className="text-hacker-dim text-xs mt-1 font-mono">// visão geral do sistema</p>
         </div>
         <Link href="/admin/filhos" className="btn-primary text-xs font-mono">
-          + novo_alvo
+          + novo_filho
         </Link>
       </div>
 
       {/* Cards de estatísticas - Terminal style */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         {[
-          { label: 'ALVOS', value: stats.totalFilhos, prefix: 'targets:', color: 'text-hacker-glow' },
-          { label: 'ONLINE', value: stats.ativos, prefix: 'active:', color: 'text-hacker-glow' },
-          { label: 'CHECKINS', value: stats.totalCheckins, prefix: 'pings:', color: 'text-cyan-400' },
-          { label: 'ALERTAS', value: stats.alertasNaoLidos, prefix: 'warnings:', color: stats.alertasNaoLidos > 0 ? 'text-red-400' : 'text-hacker-dim' },
+          { label: 'FILHOS', value: stats.totalFilhos, prefix: 'total:', color: 'text-hacker-glow' },
+          { label: 'ATIVOS', value: stats.ativos, prefix: 'ativos:', color: 'text-hacker-glow' },
+          { label: 'REGISTROS', value: stats.totalCheckins, prefix: 'registros:', color: 'text-cyan-400' },
+          { label: 'ALERTAS', value: stats.alertasNaoLidos, prefix: 'alertas:', color: stats.alertasNaoLidos > 0 ? 'text-red-400' : 'text-hacker-dim' },
         ].map((stat) => (
           <div key={stat.label} className="card border-hacker-border hover:border-hacker-glow/30 transition-all">
             <div className="text-[10px] text-hacker-muted uppercase tracking-wider mb-1">
@@ -164,7 +164,7 @@ export default function AdminDashboardPage() {
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-bold text-hacker-glow font-mono">
-              <span className="text-hacker-dim">$</span> ls ~/targets
+              <span className="text-hacker-dim">$</span> ls ~/filhos
             </h2>
             <Link href="/admin/filhos" className="text-xs text-hacker-dim hover:text-hacker-glow font-mono transition-colors">
               ver_todos →
@@ -174,11 +174,11 @@ export default function AdminDashboardPage() {
           {filhos.length === 0 ? (
             <div className="text-center py-8">
               <div className="text-hacker-dim text-sm font-mono">
-                <p className="mb-2">$ ls ~/targets</p>
-                <p className="text-hacker-muted">nenhum alvo encontrado</p>
+                <p className="mb-2">$ ls ~/filhos</p>
+                <p className="text-hacker-muted">nenhum filho encontrado</p>
               </div>
               <Link href="/admin/filhos" className="text-hacker-glow text-xs mt-3 inline-block font-mono hover:underline">
-                $ add --target →
+                $ adicionar →
               </Link>
             </div>
           ) : (
@@ -197,20 +197,20 @@ export default function AdminDashboardPage() {
                     <div>
                       <p className="text-sm text-hacker-glow font-mono group-hover:text-glow">{filho.nome}</p>
                       <p className="text-[10px] text-hacker-dim font-mono">
-                        {filho.idade ? `age:${filho.idade}` : ''}
+                        {filho.idade ? `idade:${filho.idade}` : ''}
                         {filho.idade && filho.dispositivo ? ' | ' : ''}
-                        {filho.dispositivo ? `dev:${filho.dispositivo}` : ''}
+                        {filho.dispositivo ? `disp:${filho.dispositivo}` : ''}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
                     {filho.checkins[0] ? (
                       <div className="font-mono">
-                        <p className="text-[10px] text-hacker-dim">last_ping:</p>
+                        <p className="text-[10px] text-hacker-dim">último:</p>
                         <p className="text-[10px] text-hacker-glow">{formatDate(filho.checkins[0].createdAt)}</p>
                       </div>
                     ) : (
-                      <span className="text-[10px] text-hacker-muted font-mono">no_data</span>
+                      <span className="text-[10px] text-hacker-muted font-mono">sem_dados</span>
                     )}
                   </div>
                 </Link>
@@ -223,7 +223,7 @@ export default function AdminDashboardPage() {
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-bold text-hacker-glow font-mono">
-              <span className="text-hacker-dim">$</span> tail ~/alerts
+              <span className="text-hacker-dim">$</span> ver ~/alertas
               {stats.alertasNaoLidos > 0 && (
                 <span className="ml-2 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold
                                text-red-400 bg-red-900/30 border border-red-800/50 rounded font-mono">
@@ -239,7 +239,7 @@ export default function AdminDashboardPage() {
           {alertas.length === 0 ? (
             <div className="text-center py-8">
               <div className="text-hacker-dim text-sm font-mono">
-                <p className="mb-2">$ tail ~/alerts</p>
+                <p className="mb-2">$ ver ~/alertas</p>
                 <p className="text-hacker-muted">sem alertas pendentes</p>
               </div>
             </div>

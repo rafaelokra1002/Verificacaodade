@@ -81,9 +81,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Itens do menu - estilo terminal
   const menuItems = [
-    { href: '/admin', label: 'dashboard', cmd: '~/dash' },
-    { href: '/admin/filhos', label: 'alvos', cmd: '~/targets' },
-    { href: '/admin/alertas', label: 'alertas', cmd: '~/alerts' },
+    { href: '/admin', label: 'painel', cmd: '~/painel' },
+    { href: '/admin/filhos', label: 'filhos', cmd: '~/filhos' },
+    { href: '/admin/alertas', label: 'alertas', cmd: '~/alertas' },
     { href: '/admin/logs', label: 'logs', cmd: '~/logs' },
   ];
 
@@ -180,7 +180,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                      hover:bg-red-900/20 border border-transparent hover:border-red-800/50 transition-all"
           >
             <span className="text-red-500">$</span>
-            exit --session
+            exit --sair
           </button>
         </div>
       </aside>

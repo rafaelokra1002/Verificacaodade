@@ -9,6 +9,7 @@ import prisma from '@/lib/prisma';
 import {
   getClientIP,
   getUserAgent,
+  parseUserAgent,
   saveBase64Image,
   isTokenValid,
   dentroDoPerimetro,
@@ -19,7 +20,7 @@ import {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { token, foto, latitude, longitude } = body;
+    const { token, foto, latitude, longitude, tela, bateria, carregando, rede, idioma, timezone } = body;
 
     if (!token) {
       return errorResponse('Token de check-in é obrigatório', 400);
@@ -105,6 +106,9 @@ export async function POST(request: NextRequest) {
 
     // Transação: criar check-in + alertas + marcar token
     const resultado = await prisma.$transaction(async (tx) => {
+      // Parsear plataforma e navegador do User-Agent
+      const { plataforma, navegador } = parseUserAgent(userAgent);
+
       const checkin = await tx.checkin.create({
         data: {
           filhoId: tokenRecord.filhoId,
@@ -114,6 +118,14 @@ export async function POST(request: NextRequest) {
           endereco,
           ip,
           userAgent,
+          plataforma,
+          navegador,
+          tela: tela || null,
+          bateria: bateria !== undefined ? parseInt(String(bateria), 10) : null,
+          carregando: carregando !== undefined ? Boolean(carregando) : null,
+          rede: rede || null,
+          idioma: idioma || null,
+          timezone: timezone || null,
         },
       });
 

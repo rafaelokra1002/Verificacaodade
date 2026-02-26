@@ -45,12 +45,12 @@ export default function LogsPage() {
 
   const getActionTag = (acao: string) => {
     const tags: Record<string, { color: string; label: string }> = {
-      LOGIN: { color: 'text-cyan-400', label: 'AUTH' },
-      CHECKIN_REALIZADO: { color: 'text-hacker-glow', label: 'PING' },
+      LOGIN: { color: 'text-cyan-400', label: 'ACESSO' },
+      CHECKIN_REALIZADO: { color: 'text-hacker-glow', label: 'REGISTRO' },
       GERAR_TOKEN_CHECKIN: { color: 'text-purple-400', label: 'TOKEN' },
-      CADASTRAR_FILHO: { color: 'text-green-400', label: 'ADD' },
-      REMOVER_FILHO: { color: 'text-red-400', label: 'DEL' },
-      CRIAR_CERCA: { color: 'text-yellow-400', label: 'FENCE' },
+      CADASTRAR_FILHO: { color: 'text-green-400', label: 'NOVO' },
+      REMOVER_FILHO: { color: 'text-red-400', label: 'REMOVER' },
+      CRIAR_CERCA: { color: 'text-yellow-400', label: 'CERCA' },
     };
     return tags[acao] || { color: 'text-hacker-dim', label: 'SYS' };
   };

@@ -29,6 +29,62 @@ export function getUserAgent(request: NextRequest): string {
   return request.headers.get('user-agent') || 'Desconhecido';
 }
 
+/** Parsear User-Agent para extrair plataforma e navegador */
+export function parseUserAgent(ua: string): { plataforma: string; navegador: string } {
+  let plataforma = 'Desconhecido';
+  let navegador = 'Desconhecido';
+
+  // Detectar plataforma/dispositivo
+  if (/iPhone/i.test(ua)) {
+    plataforma = 'iPhone';
+    const match = ua.match(/iPhone OS (\d+[_.]\d+)/);
+    if (match) plataforma += ` (iOS ${match[1].replace('_', '.')})`;
+  } else if (/iPad/i.test(ua)) {
+    plataforma = 'iPad';
+    const match = ua.match(/CPU OS (\d+[_.]\d+)/);
+    if (match) plataforma += ` (iPadOS ${match[1].replace('_', '.')})`;
+  } else if (/Android/i.test(ua)) {
+    const verMatch = ua.match(/Android (\d+\.?\d*)/);
+    plataforma = verMatch ? `Android ${verMatch[1]}` : 'Android';
+    // Tentar pegar modelo do celular
+    const modelMatch = ua.match(/;\s*([^;)]+)\s*Build/);
+    if (modelMatch) plataforma += ` (${modelMatch[1].trim()})`;
+  } else if (/Windows/i.test(ua)) {
+    plataforma = 'Windows';
+    if (/Windows NT 10/i.test(ua)) plataforma = 'Windows 10/11';
+  } else if (/Macintosh/i.test(ua)) {
+    plataforma = 'macOS';
+  } else if (/Linux/i.test(ua)) {
+    plataforma = 'Linux';
+  }
+
+  // Detectar navegador
+  if (/Edg\//i.test(ua)) {
+    const match = ua.match(/Edg\/(\d+)/);
+    navegador = match ? `Edge ${match[1]}` : 'Edge';
+  } else if (/OPR\//i.test(ua) || /Opera/i.test(ua)) {
+    const match = ua.match(/OPR\/(\d+)/);
+    navegador = match ? `Opera ${match[1]}` : 'Opera';
+  } else if (/SamsungBrowser/i.test(ua)) {
+    const match = ua.match(/SamsungBrowser\/(\d+)/);
+    navegador = match ? `Samsung Browser ${match[1]}` : 'Samsung Browser';
+  } else if (/CriOS/i.test(ua)) {
+    const match = ua.match(/CriOS\/(\d+)/);
+    navegador = match ? `Chrome iOS ${match[1]}` : 'Chrome iOS';
+  } else if (/Chrome\//i.test(ua)) {
+    const match = ua.match(/Chrome\/(\d+)/);
+    navegador = match ? `Chrome ${match[1]}` : 'Chrome';
+  } else if (/Safari\//i.test(ua) && /Version\//i.test(ua)) {
+    const match = ua.match(/Version\/(\d+\.?\d*)/);
+    navegador = match ? `Safari ${match[1]}` : 'Safari';
+  } else if (/Firefox\//i.test(ua)) {
+    const match = ua.match(/Firefox\/(\d+)/);
+    navegador = match ? `Firefox ${match[1]}` : 'Firefox';
+  }
+
+  return { plataforma, navegador };
+}
+
 /** Formatar data para exibição */
 export function formatDate(date: Date): string {
   return new Intl.DateTimeFormat('pt-BR', {
