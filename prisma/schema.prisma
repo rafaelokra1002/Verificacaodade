@@ -1,0 +1,88 @@
+// Prisma Schema - Sistema de Verificação de Identidade
+// Modelos para gerenciar administradores, clientes e verificações
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Administrador do sistema
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  nome      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+/// Status possíveis do cliente
+enum StatusCliente {
+  PENDENTE
+  VERIFICADO
+}
+
+/// Cliente que precisa ser verificado
+model Cliente {
+  id        String        @id @default(cuid())
+  nome      String
+  telefone  String
+  status    StatusCliente @default(PENDENTE)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  verificacoes Verificacao[]
+  tokens       TokenVerificacao[]
+
+  @@map("clientes")
+}
+
+/// Dados da verificação realizada pelo cliente
+model Verificacao {
+  id        String   @id @default(cuid())
+  clienteId String
+  foto      String   @db.Text // Base64 da foto
+  latitude  Float
+  longitude Float
+  endereco  String?  @db.Text // Endereço obtido por geocodificação reversa
+  ip        String
+  userAgent String
+  createdAt DateTime @default(now())
+
+  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@map("verificacoes")
+}
+
+/// Token único para link de verificação
+model TokenVerificacao {
+  id        String   @id @default(cuid())
+  clienteId String
+  token     String   @unique
+  expiracao DateTime
+  usado     Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@map("tokens_verificacao")
+}
+
+/// Log de acesso ao sistema
+model LogAcesso {
+  id        String   @id @default(cuid())
+  acao      String
+  detalhes  String?
+  ip        String?
+  userAgent String?
+  userId    String?
+  createdAt DateTime @default(now())
+
+  @@map("logs_acesso")
+}

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e40af"/>
+      <stop offset="50%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#60a5fa"/>
+    </linearGradient>
+    <linearGradient id="bar" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#fbbf24"/>
+      <stop offset="50%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- Icon circle -->
+  <circle cx="600" cy="220" r="60" fill="rgba(255,255,255,0.15)"/>
+  <!-- Shield icon -->
+  <g transform="translate(568, 188)" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M32 64s37.3-18.7 37.3-46.7V11.7L32 0 -5.3 11.7v5.6C-5.3 45.3 32 64 32 64z" transform="scale(0.75) translate(10, 5)"/>
+    <path d="M22 38l8 8 16-16" transform="scale(0.75) translate(10, 5)"/>
+  </g>
+  <!-- Title -->
+  <text x="600" y="340" font-family="system-ui, sans-serif" font-size="48" font-weight="bold" fill="white" text-anchor="middle">Verificação de Identidade</text>
+  <!-- Subtitle -->
+  <text x="600" y="385" font-family="system-ui, sans-serif" font-size="22" fill="rgba(255,255,255,0.85)" text-anchor="middle">Complete sua verificação de forma rápida e segura</text>
+  <!-- Bottom bar -->
+  <rect y="624" width="1200" height="6" fill="url(#bar)"/>
+</svg>
