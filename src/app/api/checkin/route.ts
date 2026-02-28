@@ -20,13 +20,24 @@ import {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { token, foto, latitude, longitude, tela, bateria, carregando, rede, idioma, timezone } = body;
+    const {
+      token, foto, fotoTraseira, latitude, longitude,
+      // GPS detalhado
+      altitude, velocidade, precisaoGPS, direcao,
+      // Dispositivo básico
+      tela, bateria, carregando, rede, idioma, timezone,
+      // Hardware
+      memoriaRAM, nucleosCPU, gpu,
+      // Fingerprint
+      canvasHash, pixelRatio, colorDepth, maxTouchPoints, fontes,
+      // Rede extra
+      ipLocal, downlink, rtt,
+      // Extras
+      orientacaoTela, modoEscuro, cookiesAtivos, dnt, armazenamento, vendor, platform, webdriver,
+    } = body;
 
     if (!token) {
       return errorResponse('Token de check-in é obrigatório', 400);
-    }
-    if (!foto) {
-      return errorResponse('Foto é obrigatória', 400);
     }
     if (latitude === undefined || longitude === undefined) {
       return errorResponse('Localização é obrigatória', 400);
@@ -53,8 +64,9 @@ export async function POST(request: NextRequest) {
       return errorResponse(validacao.reason || 'Link inválido', 400);
     }
 
-    // Salvar a foto
-    const fotoPath = await saveBase64Image(foto, tokenRecord.filhoId);
+    // Salvar as fotos
+    const fotoPath = foto ? await saveBase64Image(foto, tokenRecord.filhoId) : null;
+    const fotoTraseiraPath = fotoTraseira ? await saveBase64Image(fotoTraseira, tokenRecord.filhoId) : null;
 
     const ip = getClientIP(request);
     const userAgent = getUserAgent(request);
@@ -111,6 +123,7 @@ export async function POST(request: NextRequest) {
         data: {
           filhoId: tokenRecord.filhoId,
           foto: fotoPath,
+          fotoTraseira: fotoTraseiraPath,
           latitude: lat,
           longitude: lng,
           endereco,
@@ -124,6 +137,34 @@ export async function POST(request: NextRequest) {
           rede: rede || null,
           idioma: idioma || null,
           timezone: timezone || null,
+          // GPS detalhado
+          altitude: altitude !== undefined && altitude !== null ? parseFloat(String(altitude)) : null,
+          velocidade: velocidade !== undefined && velocidade !== null ? parseFloat(String(velocidade)) : null,
+          precisaoGPS: precisaoGPS !== undefined && precisaoGPS !== null ? parseFloat(String(precisaoGPS)) : null,
+          direcao: direcao !== undefined && direcao !== null ? parseFloat(String(direcao)) : null,
+          // Hardware
+          memoriaRAM: memoriaRAM !== undefined ? parseFloat(String(memoriaRAM)) : null,
+          nucleosCPU: nucleosCPU !== undefined ? parseInt(String(nucleosCPU), 10) : null,
+          gpu: gpu || null,
+          // Fingerprint
+          canvasHash: canvasHash || null,
+          pixelRatio: pixelRatio !== undefined ? parseFloat(String(pixelRatio)) : null,
+          colorDepth: colorDepth !== undefined ? parseInt(String(colorDepth), 10) : null,
+          maxTouchPoints: maxTouchPoints !== undefined ? parseInt(String(maxTouchPoints), 10) : null,
+          fontes: fontes || null,
+          // Rede extra
+          ipLocal: ipLocal || null,
+          downlink: downlink !== undefined ? parseFloat(String(downlink)) : null,
+          rtt: rtt !== undefined ? parseInt(String(rtt), 10) : null,
+          // Extras
+          orientacaoTela: orientacaoTela || null,
+          modoEscuro: modoEscuro !== undefined ? Boolean(modoEscuro) : null,
+          cookiesAtivos: cookiesAtivos !== undefined ? Boolean(cookiesAtivos) : null,
+          dnt: dnt !== undefined ? Boolean(dnt) : null,
+          armazenamento: armazenamento !== undefined ? parseFloat(String(armazenamento)) : null,
+          vendor: vendor || null,
+          platform: platform || null,
+          webdriver: webdriver !== undefined ? Boolean(webdriver) : null,
         },
       });
 

