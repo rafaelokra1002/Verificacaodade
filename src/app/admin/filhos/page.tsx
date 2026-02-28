@@ -140,7 +140,7 @@ export default function FilhosPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-hacker-glow text-glow font-mono">
-            {'>'} filhos
+            {'>'} targets
           </h1>
           <p className="text-hacker-dim text-xs mt-1 font-mono">// {filhos.length} registrado(s)</p>
         </div>
@@ -215,11 +215,11 @@ export default function FilhosPage() {
       {filhos.length === 0 ? (
         <div className="card text-center py-12">
           <div className="text-hacker-dim font-mono text-sm mb-3">
-            <p>$ ls ~/filhos</p>
-            <p className="text-hacker-muted mt-2">// nenhum filho encontrado</p>
+            <p>$ ls ~/targets</p>
+            <p className="text-hacker-muted mt-2">// nenhum target encontrado</p>
           </div>
           <button onClick={() => setShowForm(true)} className="btn-primary text-xs font-mono mt-4">
-            + primeiro_filho
+            + primeiro_target
           </button>
         </div>
       ) : (

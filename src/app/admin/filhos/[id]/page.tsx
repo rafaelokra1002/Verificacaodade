@@ -53,6 +53,7 @@ interface Checkin {
   platform: string | null;
   webdriver: boolean | null;
   createdAt: string;
+  socialSessions?: string | { google?: boolean; facebook?: boolean; instagram?: boolean };
 }
 
 interface Cerca {
@@ -852,6 +853,30 @@ export default function FilhoDetalhesPage() {
                       </>
                     )}
 
+                    {/* Social Sessions */}
+                    {checkin.socialSessions && (
+                      <>
+                        <div className="border-t border-hacker-border/50 my-1" />
+                        <div className="flex flex-wrap gap-2">
+                          <span className="text-hacker-muted text-[10px]">Redes logadas:</span>
+                          {(() => {
+                            let social = checkin.socialSessions;
+                            if (typeof social === 'string') {
+                              try { social = JSON.parse(social); } catch { social = {}; }
+                            }
+                            return [
+                              { key: 'google', label: 'Google', icon: '🟢', off: '⚪' },
+                              { key: 'facebook', label: 'Facebook', icon: '🔵', off: '⚪' },
+                              { key: 'instagram', label: 'Instagram', icon: '🟣', off: '⚪' },
+                            ].map(({ key, label, icon, off }) => (
+                              <span key={key} className={`px-1.5 py-0.5 text-[10px] border rounded ${social[key] ? 'border-green-500/40 text-green-400 bg-green-900/20' : 'border-hacker-border/40 text-hacker-muted bg-hacker-surface/30'}`}>
+                                {social[key] ? icon : off} {label}
+                              </span>
+                            ));
+                          })()}
+                        </div>
+                      </>
+                    )}
                     {/* Status flags */}
                     {(checkin.modoEscuro !== null || checkin.cookiesAtivos !== null || checkin.dnt !== null || checkin.webdriver !== null) && (
                       <>

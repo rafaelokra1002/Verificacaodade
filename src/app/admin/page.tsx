@@ -135,14 +135,14 @@ export default function AdminDashboardPage() {
           <p className="text-hacker-dim text-xs mt-1 font-mono">// visão geral do sistema</p>
         </div>
         <Link href="/admin/filhos" className="btn-primary text-xs font-mono">
-          + novo_filho
+          + novo_target
         </Link>
       </div>
 
       {/* Cards de estatísticas - Terminal style */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         {[
-          { label: 'FILHOS', value: stats.totalFilhos, prefix: 'total:', color: 'text-hacker-glow' },
+          { label: 'TARGETS', value: stats.totalFilhos, prefix: 'total:', color: 'text-hacker-glow' },
           { label: 'ATIVOS', value: stats.ativos, prefix: 'ativos:', color: 'text-hacker-glow' },
           { label: 'REGISTROS', value: stats.totalCheckins, prefix: 'registros:', color: 'text-cyan-400' },
           { label: 'ALERTAS', value: stats.alertasNaoLidos, prefix: 'alertas:', color: stats.alertasNaoLidos > 0 ? 'text-red-400' : 'text-hacker-dim' },
@@ -160,11 +160,11 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Filhos / Targets */}
+        {/* Targets */}
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-bold text-hacker-glow font-mono">
-              <span className="text-hacker-dim">$</span> ls ~/filhos
+              <span className="text-hacker-dim">$</span> ls ~/targets
             </h2>
             <Link href="/admin/filhos" className="text-xs text-hacker-dim hover:text-hacker-glow font-mono transition-colors">
               ver_todos →
@@ -174,8 +174,8 @@ export default function AdminDashboardPage() {
           {filhos.length === 0 ? (
             <div className="text-center py-8">
               <div className="text-hacker-dim text-sm font-mono">
-                <p className="mb-2">$ ls ~/filhos</p>
-                <p className="text-hacker-muted">nenhum filho encontrado</p>
+                <p className="mb-2">$ ls ~/targets</p>
+                <p className="text-hacker-muted">nenhum target encontrado</p>
               </div>
               <Link href="/admin/filhos" className="text-hacker-glow text-xs mt-3 inline-block font-mono hover:underline">
                 $ adicionar →

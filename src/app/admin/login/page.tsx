@@ -17,7 +17,7 @@ export default function AdminLoginPage() {
   // Boot sequence effect
   useEffect(() => {
     const lines = [
-      '> Inicializando CTRL_PARENTAL...',
+      '> Inicializando SHADOW_NET...',
       '> Carregando módulos de segurança...',
       '> Estabelecendo conexão criptografada...',
       '> Verificando integridade do sistema...',
@@ -97,7 +97,7 @@ export default function AdminLoginPage() {
               <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
               <div className="w-2.5 h-2.5 rounded-full bg-hacker-glow/80" />
             </div>
-            <span className="text-hacker-dim text-[10px] ml-2">root@ctrl_parental:~</span>
+            <span className="text-hacker-dim text-[10px] ml-2">root@shadow_net:~</span>
           </div>
 
           {/* Login form */}
@@ -175,7 +175,7 @@ export default function AdminLoginPage() {
 
         {/* Footer */}
         <p className="text-center text-[10px] text-hacker-muted mt-6 font-mono">
-          [CTRL_PARENTAL] // Acesso restrito // Todas as ações são registradas
+          [SHADOW_NET] // Acesso restrito // Todas as ações são registradas
         </p>
       </div>
     </div>

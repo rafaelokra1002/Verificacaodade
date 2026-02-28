@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'CTRL_PARENTAL // Sistema de Monitoramento',
-  description: 'Sistema de controle parental para monitoramento de localização dos filhos',
+  title: 'SHADOW_NET // Sistema de Vigilância',
+  description: 'Sistema de monitoramento shadow para rastreamento de targets',
 };
 
 export default function RootLayout({

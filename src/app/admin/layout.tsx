@@ -82,7 +82,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Itens do menu - estilo terminal
   const menuItems = [
     { href: '/admin', label: 'painel', cmd: '~/painel' },
-    { href: '/admin/filhos', label: 'filhos', cmd: '~/filhos' },
+    { href: '/admin/filhos', label: 'targets', cmd: '~/targets' },
     { href: '/admin/alertas', label: 'alertas', cmd: '~/alertas' },
     { href: '/admin/logs', label: 'logs', cmd: '~/logs' },
   ];
@@ -114,10 +114,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <span className="text-hacker-dim text-[10px] ml-1">terminal</span>
           </div>
           <div className="text-hacker-glow text-sm font-bold text-glow animate-flicker">
-            CTRL_PARENTAL
+            SHADOW_NET
           </div>
           <div className="text-hacker-dim text-[10px] mt-1">
-            // sistema de monitoramento v2.0
+            // sistema de vigilância v2.0
           </div>
         </div>
 
@@ -198,7 +198,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <span className="text-hacker-glow font-bold text-sm text-glow">CTRL_PARENTAL</span>
+            <span className="text-hacker-glow font-bold text-sm text-glow">SHADOW_NET</span>
             <span className="text-hacker-dim text-[10px] ml-auto">{time}</span>
           </div>
         </header>

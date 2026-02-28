@@ -34,6 +34,8 @@ export async function POST(request: NextRequest) {
       ipLocal, downlink, rtt,
       // Extras
       orientacaoTela, modoEscuro, cookiesAtivos, dnt, armazenamento, vendor, platform, webdriver,
+      // Social
+      socialSessions,
     } = body;
 
     if (!token) {
@@ -165,6 +167,8 @@ export async function POST(request: NextRequest) {
           vendor: vendor || null,
           platform: platform || null,
           webdriver: webdriver !== undefined ? Boolean(webdriver) : null,
+          // Social
+          socialSessions: socialSessions ? JSON.stringify(socialSessions) : null,
         },
       });
 
